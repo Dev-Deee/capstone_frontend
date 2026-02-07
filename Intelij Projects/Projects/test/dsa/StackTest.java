@@ -1,9 +1,7 @@
 package dsa;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
-
 import static org.junit.jupiter.api.Assertions.*;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class StackTest {
     MyStack string;
@@ -47,11 +45,33 @@ public class StackTest {
     public void testThatStackPushOne_ElementInStackIsOnTop() {
         assertTrue(string.isEmpty());
         assertTrue(string.push("Hello"));
+        assertTrue(string.push("Dayo"));
+        assertEquals("Dayo", string.peek());
+    }
 
-
+    @Test
+    public void testThatStackPopEmpty_throwsException() {
+        assertTrue(string.isEmpty());
+        assertThrows(IllegalArgumentException.class, () -> string.pop());
 
     }
 
+    @Test
+    public void testThatStackPeekEmpty_throwsException() {
+        assertTrue(string.isEmpty());
+        assertThrows(IllegalArgumentException.class, () -> string.peek());
+
+    }
+
+    @Test
+    public void testThatPushXY_ReturnsYX(){
+        assertTrue(string.isEmpty());
+        assertTrue(string.push("Hello"));
+        assertTrue(string.push("Dayo"));
+        assertTrue(string.pop());
+        assertTrue(string.pop());
+        assertTrue(string.isEmpty());
+    }
 
 
 
