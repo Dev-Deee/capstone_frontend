@@ -2,13 +2,13 @@ package dsa;
 
 public class MyStack {
     private int numberOfElements;
-    private final String []elements;
-    private int capacity;
-    private int top;
+    private String []elements;
+    private  int capacity;
+
 
     public MyStack(int capacity) {
-        this.capacity = capacity;
         this.elements = new String[capacity];
+        this.capacity = capacity;
         this.numberOfElements = 0;
     }
 
@@ -16,19 +16,20 @@ public class MyStack {
         return numberOfElements == 0;
     }
 
-    public boolean push(String element) {
+    public void push(String element) {
+        if(numberOfElements == capacity) {throw new IllegalArgumentException("cannot add to  a full stack");}
         elements[numberOfElements++] = element;
-        return true;
     }
 
     public int size() {
-        return numberOfElements;
+            return numberOfElements;
     }
 
-    public boolean pop() {
+    public String pop() {
         if(isEmpty()) {throw new IllegalArgumentException("cannot pop from empty stack");}
+        String result = elements[numberOfElements -1];
         elements[--numberOfElements] = null;
-        return true;
+        return result;
     }
 
     public String peek() {
