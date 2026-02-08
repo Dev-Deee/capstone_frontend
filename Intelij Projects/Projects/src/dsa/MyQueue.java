@@ -22,7 +22,7 @@ public class MyQueue {
     public boolean add(String element) {
         if(numberOfElements == capacity) {throw new IllegalArgumentException("Queue is full");}
         elements[rearPosition] = element;
-        rearPosition = (rearPosition + 1) % capacity;  // Circular increment
+        rearPosition = (rearPosition + 1) % capacity;
         numberOfElements++;
         return true;
     }
@@ -52,6 +52,4 @@ public class MyQueue {
         numberOfElements++;
         return true;
     }
-
-
 }
