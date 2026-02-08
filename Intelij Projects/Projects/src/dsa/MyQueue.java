@@ -34,7 +34,7 @@ public class MyQueue {
     public String remove() {
         if(isEmpty()) {throw new IllegalArgumentException("cannot remove from empty stack");}
         String result = elements[frontPosition];
-        elements[frontPosition++] = null;
+        elements[frontPosition] = null;
         frontPosition = (frontPosition + 1) % capacity;
         numberOfElements--;
         return result;

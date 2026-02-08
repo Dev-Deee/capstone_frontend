@@ -100,6 +100,20 @@ public class QueueTest {
         assertEquals(2, stringElement.size());
     }
 
+
+    @Test
+    public void testPeek_After_MultipleRemovals() {
+        assertTrue(stringElement.isEmpty());
+        stringElement.add("A");
+        stringElement.add("B");
+        stringElement.add("C");
+
+        assertEquals("A", stringElement.remove());
+        assertEquals("B", stringElement.peek());
+        assertEquals("B", stringElement.remove());
+        assertEquals("C", stringElement.peek());
+    }
+
     @Test
     public void testOffer_FullQueue_ThrowsException(){
         assertTrue(stringElement.isEmpty());
@@ -113,7 +127,16 @@ public class QueueTest {
     }
 
     @Test
+    public void testOffer_AddsElementToQueue() {
+        assertTrue(stringElement.isEmpty());
+        assertTrue(stringElement.offer("Amala"));
+        assertFalse(stringElement.isEmpty());
+        assertEquals(1, stringElement.size());
+    }
+
+    @Test
     public void testThatQueue_FollowsFIFO_Order() {
+        assertTrue(stringElement.isEmpty());
         stringElement.add("Apple");
         stringElement.add("Bread");
         stringElement.add("Yam");
@@ -123,7 +146,8 @@ public class QueueTest {
     }
 
     @Test
-    public void testCircularBehavior() {
+    public void testThatQueue_Add_Remove_Add_Remove_ReturnCorrectOrder() {
+        assertTrue(stringElement.isEmpty());
         stringElement.add("A");
         stringElement.add("B");
         stringElement.add("C");
