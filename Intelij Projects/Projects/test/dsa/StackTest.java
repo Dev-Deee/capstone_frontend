@@ -88,6 +88,14 @@ public class StackTest {
     }
 
     @Test
+    public void testThatStackPeek_returnsElement() {
+        assertTrue(string.isEmpty());
+        string.push("Boole");
+        string.push("Kokoro");
+        assertEquals("Kokoro", string.peek());
+    }
+
+    @Test
     public void testThatStackPushXY_PopXY_ReturnsY() {
         assertTrue(string.isEmpty());
         string.push("Hello");
