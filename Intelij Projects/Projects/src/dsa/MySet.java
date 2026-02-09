@@ -45,7 +45,6 @@ public class MySet {
         numberOfElements = 0;
     }
 
-
     public boolean remove(String element) {
         if (isEmpty()) {throw new IllegalArgumentException("cannot remove from empty set");}
         for (int index = 0; index < numberOfElements; index++) {
