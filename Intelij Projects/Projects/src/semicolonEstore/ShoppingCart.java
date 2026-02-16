@@ -1,5 +1,6 @@
 package semicolonEstore;
 
-public class ShoppingCart {
+public class ShoppingCart extends Items {
+
 
 }
