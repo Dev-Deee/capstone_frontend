@@ -1,26 +1,29 @@
 package BankApp;
 public class Account {
-    private int balance = 0;
+    private double balance = 0.0;
     private String pinCode;
     private String name;
     private String phoneNumber;
     private int age;
-//    private String accountNumber;
+    private String accountNumber;
 
-    public Account(String name, String pin, String phoneNumber, int age, String accountNumber) {
-        this.pinCode = pin;
-        this.name = name;
-        this.phoneNumber = phoneNumber;
-        this.age = age;
-//        generateAccountNumber(phoneNumber);
+    public Account(String name, String pin, String phoneNumber, int age) {
+        setName(name);
+        setPin(pin);
+        setPhoneNumber(phoneNumber);
+        setAge(age);
     }
 
-    public int getBalance() {
+    public double getBalance() {
         return balance;
     }
 
+    public String setAccountNumber(String accountNumber) {
+        validateAccountNumber(accountNumber);
+        return this.accountNumber = accountNumber;
+    }
 
-    public int checkBalance(String userPin) {
+    public double checkBalance(String userPin) {
         validatePinLength(userPin);
         if (pinCode.equalsIgnoreCase(userPin))
             return balance;
@@ -30,16 +33,14 @@ public class Account {
         }
     }
 
-    public void deposit(int amount) {
+    public void deposit(double amount) {
         if (amount > 0) {
             this.balance = balance + amount;
         }
     }
 
-    public int withdraw(int amount, String userPin) {
-        validatePinLength(userPin);
-        validatePin(userPin);
-        validateNegativeAmount(amount);
+    public double withdraw(double amount, String userPin) {
+        validateWithdraw(amount, userPin);
         this.balance = balance - amount;
         return balance;
     }
@@ -66,6 +67,10 @@ public class Account {
         return phoneNumber;
     }
 
+    public String getAccount() {
+        return accountNumber;
+    }
+
     public void setPhoneNumber(String phoneNumber) {
         validatePhoneNumber(phoneNumber);
         this.phoneNumber = phoneNumber.trim();
@@ -84,7 +89,7 @@ public class Account {
     }
 
     private static void validatePhoneNumber(String phoneNumber) {
-        if(phoneNumber == null || phoneNumber.trim().isEmpty() || phoneNumber.length() != 11){
+        if (phoneNumber == null || phoneNumber.trim().isEmpty() || !phoneNumber.matches("\\d{11}")){
             throw new IllegalArgumentException("Invalid Phone Number. Phone number must be exactly 11 digits");
         }
     }
@@ -96,8 +101,14 @@ public class Account {
     }
 
     private static void validateName(String name) {
-        if(name.trim().isEmpty()) {
+        if (name == null || name.trim().isEmpty()) {
             throw new IllegalArgumentException("Name cannot be empty");
+        }
+    }
+
+    private static void validateAccountNumber(String accountNumber) {
+        if (accountNumber == null || !accountNumber.matches("\\d{10}")) {
+            throw new IllegalArgumentException("Invalid Account Number. Account number must be exactly 10 digits");
         }
     }
     private void validatePin(String userPin) {
@@ -105,12 +116,16 @@ public class Account {
             throw new IllegalArgumentException("Incorrect pin");
     }
 
-    private void validateNegativeAmount(int amount) {
+    private void validateNegativeAmount(double amount) {
         if (amount <= 0)
             throw new IllegalArgumentException("Amount must be greater than 0");
         if (amount > balance)
             throw new IllegalArgumentException("Insufficient funds");
     }
 
-
+    private void validateWithdraw(double amount, String userPin) {
+        validatePinLength(userPin);
+        validatePin(userPin);
+        validateNegativeAmount(amount);
+    }
 }
