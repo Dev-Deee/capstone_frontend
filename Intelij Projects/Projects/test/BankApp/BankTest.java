@@ -10,6 +10,7 @@ public class BankTest {
     public void setup() {
         bank = new Bank("Bank of Nigeria");
     }
+
     @Test
     public void testThatBank_canCreateAccount() {
         bank.createAccount("Oladayo Ajomole", "0123", "08130556161", 20);
