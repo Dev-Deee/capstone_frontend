@@ -8,7 +8,8 @@ public class AccountTest {
     Account pensionAccount;
 
     @BeforeEach
-    public void setUp() {
+    public void setUp()
+    {
         pensionAccount = new Account("Oladayo Ajomole", "0123", "08141961961", 19);
     }
 
