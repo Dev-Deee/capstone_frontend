@@ -27,7 +27,7 @@ public class BankTest {
     @Test
     public void testThat_BankCannotCreateAccount_WithDuplicateAccountNumber() {
         bank.createAccount("Oladayo Ajomole", "0123", "08130556161", 20);
-        assertThrows(IllegalArgumentException.class, () -> bank.createAccount("Another User", "1234", "08130556161", 22));
+        assertThrows(IllegalArgumentException.class, () -> bank.createAccount("Another One", "1234", "08130556161", 22));
     }
 
     @Test
