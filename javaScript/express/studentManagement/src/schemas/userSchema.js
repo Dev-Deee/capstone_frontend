@@ -1,10 +1,10 @@
 const {zod} = require('zod')
 
 const createUserSchema = z.object({
-    body:zod.object({
-        name: zod.string().min(2, "Name is required"),
-        email: zod.string().email("invalid email"),
-        role: zod.enum(['STUDENT', 'FACILITATOR']),
+    body:z.object({
+        name: z.string().min(2, "Name is required"),
+        email: z.string().email("invalid email"),
+        role: z.enum(['STUDENT', 'FACILITATOR']),
     })
 });
 module.exports = {createUserSchema};

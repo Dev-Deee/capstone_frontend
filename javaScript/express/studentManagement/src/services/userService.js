@@ -1,5 +1,6 @@
 const User = require('../models/user');
 const ErrorResponse = require('../utils/errorResponse');
+const {body} = require("express/lib/request");
 
 exports.registerUser = async (userData) => {
     const existingUser = await User.findOne({email: userData.email});
@@ -19,7 +20,7 @@ exports.loginUser = async (userData) => {
 };
 
 exports.updateUser = async (userData) => {
-    const {name, email, password} = req.body;
+    const {name, email, password} = body;
     const user = await user.findOne({email})
     if (!user) {
         throw new ErrorResponse('Invalid credentials', 401);
