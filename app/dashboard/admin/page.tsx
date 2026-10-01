@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
 
 export default function AdminIndex() {
-  redirect("/dashboard/admin/invite-codes");
+  redirect("/dashboard/admin/people");
 }

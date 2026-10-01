@@ -12,36 +12,24 @@ interface NavItem {
 
 const NAV_BY_ROLE: Record<string, NavItem[]> = {
   STUDENT: [
-    { href: "/dashboard/student", label: "Attendance & Devices" },
-    { href: "/dashboard/student/attendance", label: "Attendance History" },
-    { href: "/dashboard/student/profile", label: "My Profile" },
-    { href: "/dashboard/student/assignments", label: "Assignments" },
+    { href: "/dashboard/student", label: "Dashboard" },
+    { href: "/dashboard/student/learning", label: "My Learning" },
+    { href: "/dashboard/student/profile", label: "Account Settings" },
   ],
   FACILITATOR: [
     { href: "/dashboard/facilitator", label: "Overview" },
-    { href: "/dashboard/facilitator/assignments", label: "Assignments" },
-    { href: "/dashboard/facilitator/attendance", label: "Attendance" },
+    { href: "/dashboard/facilitator/classes", label: "My Classes" },
   ],
   ADMIN: [
-    { href: "/dashboard/admin/invite-codes", label: "Student Invite Codes" },
-    { href: "/dashboard/admin/facilitator-assignments", label: "Facilitator Assignments" },
-    { href: "/dashboard/admin/resumption", label: "Resumption Sessions" },
-    { href: "/dashboard/admin/resumption/attendance", label: "Resumption Attendance" },
-    { href: "/dashboard/admin/attendance", label: "Attendance Overview" },
+    { href: "/dashboard/admin/people", label: "People" },
+    { href: "/dashboard/admin/attendance", label: "Attendance" },
   ],
   SUPER_ADMIN: [
     { href: "/dashboard/super-admin/institution", label: "Institution" },
-    { href: "/dashboard/super-admin/cohorts", label: "Cohorts" },
-    { href: "/dashboard/super-admin/subjects", label: "Subjects" },
-    { href: "/dashboard/super-admin/invite-codes", label: "Student Invite Codes" },
-    { href: "/dashboard/super-admin/admin-roles", label: "Admin Roles" },
-    { href: "/dashboard/super-admin/staff-invites", label: "Staff Invites" },
-    { href: "/dashboard/super-admin/users", label: "Users" },
-    { href: "/dashboard/admin/invite-codes", label: "Student Invite Codes" },
-    { href: "/dashboard/admin/facilitator-assignments", label: "Facilitator Assignments" },
-    { href: "/dashboard/admin/resumption", label: "Resumption Sessions" },
-    { href: "/dashboard/admin/resumption/attendance", label: "Resumption Attendance" },
-    { href: "/dashboard/admin/attendance", label: "Attendance Overview" },
+    { href: "/dashboard/super-admin/cohorts", label: "Cohorts & Subjects" },
+    { href: "/dashboard/super-admin/invites", label: "Invites" },
+    { href: "/dashboard/super-admin/users", label: "Users & Roles" },
+    { href: "/dashboard/admin/attendance", label: "Attendance" },
   ],
 };
 
@@ -82,6 +70,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const role = highestRole(roles);
   const navItems = NAV_BY_ROLE[role] || [];
+  // Longest matching href wins, so sub-pages (e.g. a cohort's detail page)
+  // highlight their parent without "/dashboard/student" swallowing every student page.
+  const activeHref = navItems
+    .filter((i) => pathname === i.href || pathname.startsWith(i.href + "/"))
+    .sort((x, y) => y.href.length - x.href.length)[0]?.href;
 
   return (
     <div className="min-h-screen flex bg-gray-50">
@@ -132,7 +125,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         <nav className="flex-1 py-3 px-2">
           {navItems.map((item) => {
-            const isActive = pathname === item.href;
+            const isActive = item.href === activeHref;
             return (
               <Link
                 key={item.href}

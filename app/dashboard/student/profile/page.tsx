@@ -3,8 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import { userApi, authApi } from "@/lib/api";
 import { registerBiometric } from "@/lib/webauthn";
+import ActiveDevices from "@/components/ActiveDevices";
 
-type Tab = "info" | "phone" | "password" | "biometric";
+type Tab = "info" | "phone" | "password" | "biometric" | "devices";
 
 export default function StudentProfilePage() {
   const [activeTab, setActiveTab] = useState<Tab>("info");
@@ -123,34 +124,32 @@ export default function StudentProfilePage() {
     { id: "phone", label: "Phone" },
     { id: "password", label: "Password" },
     { id: "biometric", label: "Biometric Login" },
+    { id: "devices", label: "Devices" },
   ];
 
   return (
     <div className="p-6">
-      <h1 className="text-base font-semibold text-gray-900 mb-6">Account Settings</h1>
+      <h1 className="text-lg font-semibold text-gray-900 mb-4">Account Settings</h1>
 
-      <div className="flex gap-8">
-        {/* Left sub-nav */}
-        <div className="w-44 shrink-0">
-          <nav className="space-y-0.5">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => { setActiveTab(tab.id); setMessage(null); }}
-                className={`w-full text-left px-3 py-2 text-sm rounded-md transition-colors ${
-                  activeTab === tab.id
-                    ? "bg-blue-50 text-blue-600 font-medium"
-                    : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </nav>
-        </div>
+      {/* Same tab bar as the other tabbed pages */}
+      <div className="flex gap-1 mb-6 border-b border-gray-200 overflow-x-auto">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => { setActiveTab(tab.id); setMessage(null); }}
+            className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px whitespace-nowrap transition-colors ${
+              activeTab === tab.id
+                ? "border-blue-500 text-blue-600"
+                : "border-transparent text-gray-500 hover:text-gray-800"
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
 
-        {/* Right content */}
-        <div className="flex-1 max-w-lg">
+      <div>
+        <div className="max-w-lg">
           {message && (
             <div className={`text-sm rounded-lg px-3 py-2 border mb-4 ${
               message.type === "success"
@@ -321,6 +320,8 @@ export default function StudentProfilePage() {
               </button>
             </div>
           )}
+
+          {activeTab === "devices" && <ActiveDevices />}
         </div>
       </div>
     </div>

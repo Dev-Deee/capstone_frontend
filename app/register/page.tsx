@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { authApi } from "@/lib/api";
@@ -22,6 +22,12 @@ export default function RegisterPage() {
 
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Invite emails/texts link to /register?code=XXXX — prefill so students don't retype it.
+  useEffect(() => {
+    const code = new URLSearchParams(window.location.search).get("code");
+    if (code) setInviteCode(code.toUpperCase());
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
