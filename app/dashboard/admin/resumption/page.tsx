@@ -1,0 +1,148 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { resumptionApi, cohortApi } from "@/lib/api";
+import { QrDisplay } from "@/components/QrDisplay";
+import { LiveCodeDisplay } from "@/components/LiveCodeDisplay";
+
+export default function AdminResumptionPage() {
+  const [sessions, setSessions] = useState<any[]>([]);
+  const [cohorts, setCohorts] = useState<any[]>([]);
+  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [selectedId, setSelectedId] = useState("");
+  const [newExpiresAt, setNewExpiresAt] = useState("");
+  const [isWorking, setIsWorking] = useState(false);
+
+  function cohortName(publicId: string) {
+    return cohorts.find((c) => c.publicId === publicId)?.name || publicId;
+  }
+
+  async function loadToday() {
+    setMessage(null);
+    try {
+      const list = await resumptionApi.getToday();
+      setSessions(list);
+      if (list.length === 0) setMessage({ type: "error", text: "No resumption sessions open today." });
+    } catch {
+      setMessage({ type: "error", text: "Failed to load — check MANAGE_RESUMPTION_CODES" });
+    }
+  }
+
+  useEffect(() => {
+    cohortApi.getAll().then(setCohorts).catch(() => {});
+    loadToday();
+  }, []);
+
+  async function handleRegenerate(publicId: string) {
+    setIsWorking(true);
+    try {
+      const updated = await resumptionApi.regenerate(publicId);
+      setSessions((prev) => prev.map((s) => (s.publicId === publicId ? updated : s)));
+      setMessage({ type: "success", text: "Code regenerated." });
+    } catch {
+      setMessage({ type: "error", text: "Failed — check cohort scope" });
+    } finally { setIsWorking(false); }
+  }
+
+  async function handleClose(publicId: string) {
+    setIsWorking(true);
+    try {
+      const updated = await resumptionApi.close(publicId);
+      setSessions((prev) => prev.map((s) => (s.publicId === publicId ? updated : s)));
+      setMessage({ type: "success", text: "Session closed." });
+    } catch {
+      setMessage({ type: "error", text: "Failed — check cohort scope" });
+    } finally { setIsWorking(false); }
+  }
+
+  async function handleAdjustWindow(e: React.FormEvent) {
+    e.preventDefault();
+    setIsWorking(true);
+    try {
+      const updated = await resumptionApi.adjustWindow(selectedId, newExpiresAt);
+      setSessions((prev) => prev.map((s) => (s.publicId === selectedId ? updated : s)));
+      setMessage({ type: "success", text: "Window adjusted." });
+    } catch {
+      setMessage({ type: "error", text: "Failed — check cohort scope" });
+    } finally { setIsWorking(false); }
+  }
+
+  return (
+    <div className="p-6">
+      <h1 className="text-lg font-semibold text-gray-900 mb-5">Resumption Sessions</h1>
+
+      {message && (
+        <div className={`text-sm rounded-lg px-3 py-2 border mb-5 ${
+          message.type === "success" ? "bg-green-50 text-green-700 border-green-100" : "bg-red-50 text-red-700 border-red-100"
+        }`}>
+          {message.text}
+        </div>
+      )}
+
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm font-semibold text-gray-700">Today's Sessions</h2>
+          <button onClick={loadToday} className="text-xs text-gray-400 hover:text-gray-700 underline">Refresh</button>
+        </div>
+
+        {sessions.length === 0 ? (
+          <p className="text-sm text-gray-400">No resumption sessions today.</p>
+        ) : (
+          <ul className="space-y-3">
+            {sessions.map((s) => (
+              <li key={s.publicId} className="border border-gray-100 rounded-lg p-4 text-sm">
+                <div className="flex items-start gap-3 mb-1">
+                  <div className="flex-1">
+                    {s.isOpen
+                      ? <LiveCodeDisplay publicId={s.publicId} type="resumption" />
+                      : <p className="font-mono font-semibold text-gray-300">—</p>
+                    }
+                  </div>
+                  <span className={`shrink-0 text-[10px] px-1.5 py-0.5 rounded-full font-medium ${s.isOpen ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
+                    {s.isOpen ? "Open" : "Closed"}
+                  </span>
+                </div>
+                <p className="text-gray-400 text-xs mb-3">
+                  {cohortName(s.cohortPublicId)} — expires {new Date(s.expiresAt).toLocaleTimeString()}
+                </p>
+                {s.isOpen && s.qrToken && (
+                  <div className="mb-3">
+                    <QrDisplay
+                      url={`${typeof window !== "undefined" ? window.location.origin : ""}/attend/resumption/${s.qrToken}`}
+                      label="Students scan to check in"
+                    />
+                  </div>
+                )}
+                <div className="flex gap-3 text-xs">
+                  <button onClick={() => handleRegenerate(s.publicId)} disabled={isWorking} className="text-blue-600 hover:underline disabled:opacity-50">
+                    Regenerate
+                  </button>
+                  <button onClick={() => handleClose(s.publicId)} disabled={isWorking} className="text-red-600 hover:underline disabled:opacity-50">
+                    Close now
+                  </button>
+                  <button onClick={() => setSelectedId(s.publicId)} disabled={isWorking} className="text-gray-600 hover:underline disabled:opacity-50">
+                    Adjust window
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {selectedId && (
+          <form onSubmit={handleAdjustWindow} className="mt-5 pt-5 border-t border-gray-100 space-y-3 max-w-md">
+            <p className="text-xs text-gray-500">Adjusting: <span className="font-mono">{selectedId}</span></p>
+            <input
+              type="datetime-local" required
+              value={newExpiresAt} onChange={(e) => setNewExpiresAt(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <button type="submit" disabled={isWorking} className="bg-blue-600 text-white text-sm font-medium px-5 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50">
+              {isWorking ? "Updating…" : "Update Window"}
+            </button>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}

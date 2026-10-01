@@ -1,0 +1,14 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  color: #111827;
+  background: #ffffff;
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+button:not(:disabled):active {
+  transform: scale(0.98);
+  transition: transform 80ms ease-out;
+}
