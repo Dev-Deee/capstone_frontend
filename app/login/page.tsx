@@ -50,16 +50,16 @@ export default function LoginPage() {
   }
 
   const inputClass =
-    "w-full h-11 px-3.5 rounded-lg border border-stone-300 bg-white text-[15px] text-stone-900 placeholder:text-stone-400 " +
+    "w-full h-11 px-3.5 rounded-lg border border-gray-300 bg-white text-[15px] text-gray-900 placeholder:text-gray-400 " +
     "shadow-[0_1px_0_rgba(0,0,0,0.02)] transition-colors " +
-    "focus:outline-none focus:border-teal-700 focus:ring-4 focus:ring-teal-700/10";
+    "focus:outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/15";
 
   return (
-    <div className="min-h-screen grid lg:grid-cols-[1.05fr_1fr] bg-[#f7f6f3]">
+    <div className="min-h-screen grid lg:grid-cols-[1.05fr_1fr] bg-white">
       {/* ── Brand panel ─────────────────────────────────────────────── */}
-      <aside className="relative overflow-hidden bg-[#0b3d3a] text-white px-6 py-8 sm:px-10 lg:px-14 lg:py-12 flex flex-col">
+      <aside className="relative overflow-hidden bg-[#0c1f4a] text-white px-6 py-8 sm:px-10 lg:px-14 lg:py-12 flex flex-col">
         {/* Depth: soft light, fine grid, concentric rings */}
-        <div className="pointer-events-none absolute -top-40 -left-32 h-[520px] w-[520px] rounded-full bg-teal-400/20 blur-3xl" />
+        <div className="pointer-events-none absolute -top-40 -left-32 h-[520px] w-[520px] rounded-full bg-blue-500/30 blur-3xl" />
         <div
           className="pointer-events-none absolute inset-0 opacity-[0.07]"
           style={{
@@ -87,15 +87,15 @@ export default function LoginPage() {
         </div>
 
         <div className="relative mt-10 lg:mt-auto lg:mb-auto max-w-lg rise-in">
-          <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-teal-200/80">
+          <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-blue-200/80">
             Academic Operations Platform
           </p>
           <h2 className="mt-4 font-display text-[40px] leading-[1.05] sm:text-5xl lg:text-[64px] text-white">
             Every class,
             <br />
-            <span className="italic text-teal-200">accounted for.</span>
+            <span className="italic text-blue-300">accounted for.</span>
           </h2>
-          <p className="mt-5 text-[15px] leading-relaxed text-teal-50/70 max-w-md hidden sm:block">
+          <p className="mt-5 text-[15px] leading-relaxed text-blue-50/70 max-w-md hidden sm:block">
             Attendance, assignments and cohorts in one place — for the students, facilitators and
             administrators who keep a programme moving.
           </p>
@@ -103,30 +103,30 @@ export default function LoginPage() {
           <ul className="mt-10 space-y-5 hidden lg:block">
             {PILLARS.map((p) => (
               <li key={p.title} className="flex gap-4">
-                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-teal-300" />
+                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-400" />
                 <div>
                   <p className="text-sm font-medium text-white">{p.title}</p>
-                  <p className="text-sm text-teal-50/60">{p.body}</p>
+                  <p className="text-sm text-blue-50/60">{p.body}</p>
                 </div>
               </li>
             ))}
           </ul>
         </div>
 
-        <p className="relative mt-8 text-xs text-teal-50/40 hidden lg:block">
-          © {new Date().getFullYear()} Cadence · Semicolon Africa
+        <p className="relative mt-8 text-xs text-blue-50/40 hidden lg:block">
+          © {new Date().getFullYear()} Cadence
         </p>
       </aside>
 
       {/* ── Sign-in ─────────────────────────────────────────────────── */}
       <main className="flex items-center justify-center px-6 py-12 sm:px-10">
         <div className="w-full max-w-[400px] rise-in" style={{ animationDelay: "80ms" }}>
-          <h1 className="font-display text-[40px] leading-none text-stone-900">Welcome back</h1>
-          <p className="mt-3 text-[15px] text-stone-500">Sign in to your Cadence workspace.</p>
+          <h1 className="font-display text-[40px] leading-none text-gray-900">Welcome back</h1>
+          <p className="mt-3 text-[15px] text-gray-500">Sign in to your Cadence workspace.</p>
 
           <form onSubmit={handleSubmit} className="mt-9 space-y-5" noValidate={false}>
             <div>
-              <label htmlFor="identifier" className="block text-sm font-medium text-stone-700 mb-1.5">
+              <label htmlFor="identifier" className="block text-sm font-medium text-gray-700 mb-1.5">
                 Email or phone number
               </label>
               <input
@@ -144,10 +144,10 @@ export default function LoginPage() {
 
             <div>
               <div className="flex items-baseline justify-between mb-1.5">
-                <label htmlFor="password" className="block text-sm font-medium text-stone-700">
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                   Password
                 </label>
-                <Link href="/forgot-password" className="text-sm text-teal-800 hover:text-teal-950 hover:underline underline-offset-4">
+                <Link href="/forgot-password" className="text-sm text-blue-600 hover:text-blue-700 hover:underline underline-offset-4">
                   Forgot password?
                 </Link>
               </div>
@@ -167,7 +167,7 @@ export default function LoginPage() {
                   onClick={() => setShowPassword((prev) => !prev)}
                   aria-label={showPassword ? "Hide password" : "Show password"}
                   aria-pressed={showPassword}
-                  className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-md px-2.5 py-1 text-xs font-medium text-stone-500 hover:text-stone-900 hover:bg-stone-100"
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-md px-2.5 py-1 text-xs font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-100"
                 >
                   {showPassword ? "Hide" : "Show"}
                 </button>
@@ -186,7 +186,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="group w-full h-11 inline-flex items-center justify-center gap-2 rounded-lg bg-[#0b3d3a] text-[15px] font-medium text-white shadow-sm transition-colors hover:bg-[#082f2d] focus:outline-none focus-visible:ring-4 focus-visible:ring-teal-700/25 disabled:opacity-60"
+              className="group w-full h-11 inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 text-[15px] font-medium text-white shadow-sm transition-colors hover:bg-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/30 disabled:opacity-60"
             >
               {isSubmitting ? (
                 <><Spinner /> Signing in…</>
@@ -196,18 +196,18 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <div className="mt-8 flex items-center gap-3 text-xs uppercase tracking-[0.18em] text-stone-400">
-            <span className="h-px flex-1 bg-stone-200" />New student<span className="h-px flex-1 bg-stone-200" />
+          <div className="mt-8 flex items-center gap-3 text-xs uppercase tracking-[0.18em] text-gray-400">
+            <span className="h-px flex-1 bg-gray-200" />New student<span className="h-px flex-1 bg-gray-200" />
           </div>
 
           <Link
             href="/register"
-            className="mt-5 flex h-11 w-full items-center justify-center rounded-lg border border-stone-300 bg-white text-[15px] font-medium text-stone-800 transition-colors hover:border-stone-400 hover:bg-stone-50"
+            className="mt-5 flex h-11 w-full items-center justify-center rounded-lg border border-gray-300 bg-white text-[15px] font-medium text-gray-800 transition-colors hover:border-gray-400 hover:bg-gray-50"
           >
             Register with your invite code
           </Link>
 
-          <p className="mt-10 text-center text-xs text-stone-400">
+          <p className="mt-10 text-center text-xs text-gray-400">
             Staff accounts are created by invitation from your institution.
           </p>
         </div>

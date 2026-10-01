@@ -9,7 +9,7 @@ const display = Instrument_Serif({ subsets: ["latin"], weight: "400", style: ["n
 
 export const metadata: Metadata = {
   title: "Cadence",
-  description: "Academic Operations Platform — Semicolon Africa",
+  description: "Academic Operations Platform",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
