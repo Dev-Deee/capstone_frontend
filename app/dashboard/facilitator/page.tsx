@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { userApi, sessionApi, resumptionApi, facilitatorCohortApi, cohortApi, subjectApi } from "@/lib/api";
 import { QrDisplay } from "@/components/QrDisplay";
 import { LiveCodeDisplay } from "@/components/LiveCodeDisplay";
+import TabBar from "@/components/TabBar";
 
 export default function FacilitatorDashboard() {
   const [profile, setProfile] = useState<any>(null);
@@ -22,6 +23,8 @@ export default function FacilitatorDashboard() {
   const [resumptionExpiryMinutes, setResumptionExpiryMinutes] = useState(120);
   const [openedResumption, setOpenedResumption] = useState<any>(null);
   const [todaysCode, setTodaysCode] = useState<any>(null);
+  // State lives here, not in the tabs, so switching tabs never loses a live code.
+  const [tab, setTab] = useState<"class" | "resumption">("class");
 
   useEffect(() => {
     Promise.all([
@@ -149,6 +152,16 @@ export default function FacilitatorDashboard() {
         </div>
       )}
 
+      <TabBar
+        tabs={[
+          { id: "class", label: "Class Session", live: Boolean(openedSession) },
+          { id: "resumption", label: "Daily Resumption", live: Boolean(activeResumption) },
+        ]}
+        active={tab}
+        onChange={(id) => { setTab(id as "class" | "resumption"); setMessage(null); }}
+      />
+
+      {tab === "class" && (
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
         {/* My Assignments */}
         <div className="p-6 border-b border-gray-100">
@@ -172,7 +185,7 @@ export default function FacilitatorDashboard() {
         </div>
 
         {/* Open Class Session */}
-        <div className="p-6 border-b border-gray-100">
+        <div className="p-6">
           <h2 className="text-sm font-semibold text-gray-700 mb-3">Open Class Session</h2>
           <form onSubmit={handleOpenSession} className="space-y-3 max-w-md">
             <select
@@ -226,6 +239,11 @@ export default function FacilitatorDashboard() {
           )}
         </div>
 
+      </div>
+      )}
+
+      {tab === "resumption" && (
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
         {/* Open Daily Resumption */}
         <div className="p-6">
           <h2 className="text-sm font-semibold text-gray-700 mb-3">Open Daily Resumption</h2>
@@ -279,6 +297,7 @@ export default function FacilitatorDashboard() {
           )}
         </div>
       </div>
+      )}
     </div>
   );
 }

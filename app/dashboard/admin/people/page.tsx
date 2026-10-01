@@ -1,0 +1,19 @@
+"use client";
+
+import TabbedPage from "@/components/TabbedPage";
+import UsersSection from "@/components/sections/UsersSection";
+import StudentInvitesSection from "@/components/sections/StudentInvitesSection";
+import FacilitatorAssignmentsSection from "@/components/sections/FacilitatorAssignmentsSection";
+
+export default function AdminPeoplePage() {
+  return (
+    <TabbedPage
+      title="People"
+      tabs={[
+        { id: "users", label: "Users", content: <UsersSection /> },
+        { id: "invites", label: "Student Invites", content: <StudentInvitesSection /> },
+        { id: "facilitators", label: "Facilitator Assignments", content: <FacilitatorAssignmentsSection /> },
+      ]}
+    />
+  );
+}

@@ -158,6 +158,13 @@ export const authApi = {
 // --- Users ---
 export const userApi = {
   getAll: () => request<any[]>("/api/users"),
+  update: (publicId: string, data: {
+    firstName: string; middleName?: string; lastName: string; phoneNumber?: string; institutionStudentId?: string;
+  }) => request<any>(`/api/users/${publicId}`, { method: "PATCH", body: JSON.stringify(data) }),
+  activate: (publicId: string) => request<any>(`/api/users/${publicId}/activate`, { method: "PATCH" }),
+  deactivate: (publicId: string) => request<any>(`/api/users/${publicId}/deactivate`, { method: "PATCH" }),
+  remove: (publicId: string) => request<void>(`/api/users/${publicId}`, { method: "DELETE" }),
+  getMyStudents: () => request<any[]>("/api/users/my-students"),
   getFacilitators: () => request<any[]>("/api/users/facilitators"),
   getMe: () => request<any>("/api/users/me"),
   uploadProfileImage: (file: File) => {
@@ -193,6 +200,15 @@ export const cohortApi = {
       request<any>("/api/cohorts/invite-codes", { method: "POST", body: JSON.stringify(data) }),
   enrollStudent: (cohortPublicId: string, studentPublicId: string) =>
       request<void>(`/api/cohorts/${cohortPublicId}/enrollments`, { method: "POST", body: JSON.stringify({ studentPublicId }) }),
+  listInviteCodes: (cohortPublicId: string) => request<Array<{
+    publicId: string; code: string; cohortPublicId: string; expiresAt: string | null;
+    maxUses: number; useCount: number; valid: boolean; createdAt: string;
+  }>>(`/api/cohorts/${cohortPublicId}/invite-codes`),
+  sendInviteCode: (inviteCodePublicId: string, data: { emails: string[]; phoneNumbers: string[] }) =>
+      request<{ emailsSent: number; smsSent: number }>(
+        `/api/cohorts/invite-codes/${inviteCodePublicId}/send`, { method: "POST", body: JSON.stringify(data) }),
+  join: (inviteCode: string) =>
+      request<any>("/api/cohorts/join", { method: "POST", body: JSON.stringify({ inviteCode }) }),
 };
 
 // --- Subjects ---
