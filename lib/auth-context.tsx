@@ -61,6 +61,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function logout() {
     try {
       await authApi.logout();
+    } catch {
+      // Server unreachable or session already gone — signing out locally must
+      // still succeed. The refresh token simply expires server-side.
     } finally {
       clearTokens();
       setRoles([]);
