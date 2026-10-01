@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { userApi, attendanceApi, resumptionApi, cohortApi } from "@/lib/api";
 import TabBar from "@/components/TabBar";
+import PageHeader, { greeting } from "@/components/PageHeader";
 
 type Tab = "class" | "resumption" | "cohort";
 
@@ -81,15 +82,13 @@ export default function StudentDashboard() {
 
   return (
     <div className="p-6">
-      <div className="mb-5">
-        <h1 className="text-lg font-semibold text-gray-900">Dashboard</h1>
-        {profile && (
-          <p className="text-sm text-gray-400 mt-0.5">
-            Welcome back, {profile.firstName}
-            {inCohort && <> · <span className="text-gray-600">{profile.cohortName}</span></>}
-          </p>
-        )}
-      </div>
+      <PageHeader
+        eyebrow={inCohort ? profile.cohortName : "Student"}
+        title={profile ? `${greeting()}, ${profile.firstName}.` : "Dashboard"}
+        description={inCohort
+          ? "Check in for class or daily resumption below."
+          : "Join your cohort with the invite code you were sent to get started."}
+      />
 
       {message && (
         <div className={`text-sm rounded-lg px-3 py-2 border mb-5 ${

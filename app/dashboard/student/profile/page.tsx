@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { userApi, authApi } from "@/lib/api";
 import { registerBiometric } from "@/lib/webauthn";
 import ActiveDevices from "@/components/ActiveDevices";
+import PageHeader from "@/components/PageHeader";
 
 type Tab = "info" | "phone" | "password" | "biometric" | "devices";
 
@@ -129,7 +130,7 @@ export default function StudentProfilePage() {
 
   return (
     <div className="p-6">
-      <h1 className="text-lg font-semibold text-gray-900 mb-4">Account Settings</h1>
+      <PageHeader title="Account Settings" description="Your profile, sign-in options and the devices signed in to your account." />
 
       {/* Same tab bar as the other tabbed pages */}
       <div className="flex gap-1 mb-6 border-b border-gray-200 overflow-x-auto">

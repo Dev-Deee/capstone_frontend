@@ -9,6 +9,7 @@ export default function AdminAttendancePage() {
   return (
     <TabbedPage
       title="Attendance"
+      description="Cohort attendance at a glance, today's campus resumption, and the record behind it."
       tabs={[
         { id: "overview", label: "Cohort Overview", content: <AttendanceOverviewSection /> },
         { id: "today", label: "Today's Resumption", content: <ResumptionTodaySection /> },

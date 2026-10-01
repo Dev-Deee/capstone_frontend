@@ -9,6 +9,7 @@ export default function AdminPeoplePage() {
   return (
     <TabbedPage
       title="People"
+      description="Manage accounts, invite students and assign facilitators to their cohorts."
       tabs={[
         { id: "users", label: "Users", content: <UsersSection /> },
         { id: "invites", label: "Student Invites", content: <StudentInvitesSection /> },

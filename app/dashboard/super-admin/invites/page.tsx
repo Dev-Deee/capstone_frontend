@@ -8,6 +8,7 @@ export default function InvitesPage() {
   return (
     <TabbedPage
       title="Invites"
+      description="Bring students and staff into your institution."
       tabs={[
         { id: "students", label: "Student Invite Codes", content: <StudentInvitesSection /> },
         { id: "staff", label: "Staff Invites", content: <StaffInvitesSection /> },

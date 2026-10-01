@@ -8,6 +8,7 @@ export default function StudentLearningPage() {
   return (
     <TabbedPage
       title="My Learning"
+      description="Your attendance record and assignments, all in one place."
       tabs={[
         { id: "attendance", label: "Attendance", content: <StudentAttendanceSection /> },
         { id: "assignments", label: "Assignments", content: <StudentAssignmentsSection /> },

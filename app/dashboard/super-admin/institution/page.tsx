@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { institutionApi } from "@/lib/api";
+import PageHeader from "@/components/PageHeader";
 
 export default function InstitutionPage() {
   const [institution, setInstitution] = useState<any>(null);
@@ -15,7 +16,7 @@ export default function InstitutionPage() {
 
   return (
     <div className="p-6">
-      <h1 className="text-lg font-semibold text-gray-900 mb-5">Institution</h1>
+      <PageHeader title="Institution" description="The organisation this workspace belongs to." />
 
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
         {loadError ? (

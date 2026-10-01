@@ -8,6 +8,7 @@ export default function UsersAndRolesPage() {
   return (
     <TabbedPage
       title="Users & Roles"
+      description="Everyone in your institution, and what each admin is allowed to do."
       tabs={[
         { id: "users", label: "Users", content: <UsersSection /> },
         { id: "roles", label: "Admin Roles", content: <AdminRolesSection /> },
