@@ -199,7 +199,7 @@ export const cohortApi = {
   createInviteCode: (data: { cohortPublicId: string; maxUses?: number; expiresInDays?: number }) =>
       request<any>("/api/cohorts/invite-codes", { method: "POST", body: JSON.stringify(data) }),
   enrollStudent: (cohortPublicId: string, studentPublicId: string) =>
-      request<void>(`/api/cohorts/${cohortPublicId}/enrollments`, { method: "POST", body: JSON.stringify({ studentPublicId }) }),
+      request<any>(`/api/cohorts/${cohortPublicId}/enrollments`, { method: "POST", body: JSON.stringify({ studentPublicId }) }),
   listInviteCodes: (cohortPublicId: string) => request<Array<{
     publicId: string; code: string; cohortPublicId: string; expiresAt: string | null;
     maxUses: number; useCount: number; valid: boolean; createdAt: string;
