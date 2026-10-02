@@ -2,18 +2,19 @@
 
 import { useEffect, useState } from "react";
 
-const CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+// Mirrors the real check-in code: a 6-digit TOTP that rotates every 30 s
+// (TotpService: "%06d", PERIOD_SECONDS = 30).
 const PERIOD = 30;
 
 function randomCode() {
-  return Array.from({ length: 6 }, () => CHARS[Math.floor(Math.random() * CHARS.length)]).join("");
+  return String(Math.floor(Math.random() * 1_000_000)).padStart(6, "0");
 }
 
 // A quiet, illustrative product glimpse (not a screenshot, no invented data):
 // the rotating check-in code a facilitator puts on screen, and a week of
 // check-ins filling in. Holds still for reduced-motion users.
 export default function CheckInGlimpse() {
-  const [code, setCode] = useState("7K3PQX");
+  const [code, setCode] = useState("482913");
   const [left, setLeft] = useState(PERIOD);
   const [still, setStill] = useState(true);
 
