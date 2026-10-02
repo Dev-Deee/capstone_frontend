@@ -10,14 +10,14 @@ export default function TabBar({ tabs, active, onChange }: {
   onChange: (id: string) => void;
 }) {
   return (
-    <div className="flex gap-1 mb-6 border-b border-gray-200 overflow-x-auto" role="tablist">
+    <div className="flex gap-1 mb-6 overflow-x-auto overflow-y-hidden shadow-[inset_0_-1px_0_theme(colors.gray.200)]" role="tablist">
       {tabs.map((t) => (
         <button
           key={t.id}
           role="tab"
           aria-selected={active === t.id}
           onClick={() => onChange(t.id)}
-          className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px whitespace-nowrap transition-colors flex items-center gap-1.5 ${
+          className={`px-4 py-2 text-sm font-medium border-b-2 whitespace-nowrap transition-colors flex items-center gap-1.5 ${
             active === t.id ? "border-blue-500 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-800"
           }`}
         >

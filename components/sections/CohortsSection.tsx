@@ -1,10 +1,14 @@
 "use client";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 import { useEffect, useState } from "react";
 import { cohortApi } from "@/lib/api";
 
 export default function CohortsSection() {
+  // Admins and super admins reach cohort detail from their own area of the app.
+  const pathname = usePathname();
+  const cohortsBase = pathname.startsWith("/dashboard/admin") ? "/dashboard/admin/cohorts" : "/dashboard/super-admin/cohorts";
   const [cohorts, setCohorts] = useState<any[]>([]);
   const [name, setName] = useState("");
   const [startDate, setStartDate] = useState("");
@@ -80,7 +84,7 @@ export default function CohortsSection() {
             <ul className="divide-y divide-gray-100">
               {cohorts.map((c) => (
                 <li key={c.publicId} className="py-2.5 text-sm text-gray-700 flex justify-between items-center">
-                  <Link href={`/dashboard/super-admin/cohorts/${c.publicId}`} className="hover:text-blue-600 hover:underline text-gray-900 font-medium">
+                  <Link href={`${cohortsBase}/${c.publicId}`} className="hover:text-blue-600 hover:underline text-gray-900 font-medium">
                     {c.name}
                   </Link>
                   <span className={`text-xs px-2 py-0.5 rounded-full ${c.isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>

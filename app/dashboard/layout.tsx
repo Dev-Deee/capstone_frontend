@@ -27,6 +27,7 @@ const NAV_BY_ROLE: Record<string, NavItem[]> = {
   ADMIN: [
     { href: "/dashboard/admin", label: "Home", icon: "home" },
     { href: "/dashboard/admin/people", label: "People", icon: "people" },
+    { href: "/dashboard/admin/cohorts", label: "Cohorts & Subjects", icon: "layers" },
     { href: "/dashboard/admin/attendance", label: "Attendance", icon: "calendar" },
   ],
   SUPER_ADMIN: [

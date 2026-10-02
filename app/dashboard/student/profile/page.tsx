@@ -133,12 +133,12 @@ export default function StudentProfilePage() {
       <PageHeader title="Account Settings" description="Your profile, sign-in options and the devices signed in to your account." />
 
       {/* Same tab bar as the other tabbed pages */}
-      <div className="flex gap-1 mb-6 border-b border-gray-200 overflow-x-auto">
+      <div className="flex gap-1 mb-6 overflow-x-auto overflow-y-hidden shadow-[inset_0_-1px_0_theme(colors.gray.200)]">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => { setActiveTab(tab.id); setMessage(null); }}
-            className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px whitespace-nowrap transition-colors ${
+            className={`px-4 py-2 text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${
               activeTab === tab.id
                 ? "border-blue-500 text-blue-600"
                 : "border-transparent text-gray-500 hover:text-gray-800"
