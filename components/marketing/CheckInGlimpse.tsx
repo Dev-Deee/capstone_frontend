@@ -56,7 +56,7 @@ export default function CheckInGlimpse() {
             <span className="absolute inset-0 grid place-items-center text-[11px] font-medium tabular-nums text-gray-500">{left}s</span>
           </div>
         </div>
-        <p className="mt-2 text-xs text-gray-400">Students enter the code or scan the QR. It changes every 30 seconds.</p>
+        <p className="mt-2 text-xs text-gray-400">Students scan the QR, then enter this code on their phone. It changes every 30 seconds.</p>
 
         <div className="mt-6 border-t border-gray-100 pt-5">
           <p className="mb-3 text-xs font-medium text-gray-500">This week</p>

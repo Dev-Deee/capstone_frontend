@@ -7,7 +7,7 @@ const PILLARS = [
   {
     n: "01",
     title: "Attendance in seconds",
-    body: "Open a class or the day's resumption and put a rotating code on screen. Students check in from their phone by code or QR — no sheets to pass around, nothing to retype.",
+    body: "Open a class or the day's resumption and put a rotating code on screen. Students scan the QR, enter the code on their phone, and they're checked in — no sheets to pass around.",
   },
   {
     n: "02",
