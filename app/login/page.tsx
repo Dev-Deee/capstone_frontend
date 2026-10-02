@@ -41,7 +41,9 @@ export default function LoginPage() {
     setError(null);
     setIsSubmitting(true);
     try {
-      await login(identifier, password);
+      // Return to where sign-in was asked for (e.g. an invite), if anywhere.
+      const next = new URLSearchParams(window.location.search).get("next") ?? undefined;
+      await login(identifier, password, next);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
     } finally {
@@ -208,7 +210,8 @@ export default function LoginPage() {
           </Link>
 
           <p className="mt-10 text-center text-xs text-gray-400">
-            Staff accounts are created by invitation from your institution.
+            Starting a new institution?{" "}
+            <Link href="/signup" className="font-medium text-blue-600 hover:underline underline-offset-4">Create one</Link>
           </p>
         </div>
       </main>

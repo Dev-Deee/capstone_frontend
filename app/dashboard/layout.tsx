@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { userApi } from "@/lib/api";
+import InstitutionSwitcher from "@/components/InstitutionSwitcher";
 
 type IconName = "home" | "book" | "settings" | "people" | "calendar" | "building" | "layers" | "mail" | "classes";
 
@@ -31,6 +32,9 @@ const NAV_BY_ROLE: Record<string, NavItem[]> = {
     { href: "/dashboard/admin/cohorts", label: "Cohorts & Subjects", icon: "layers" },
     { href: "/dashboard/admin/attendance", label: "Attendance", icon: "calendar" },
   ],
+  PLATFORM: [
+    { href: "/dashboard/platform", label: "Institutions", icon: "building" },
+  ],
   SUPER_ADMIN: [
     { href: "/dashboard/super-admin", label: "Home", icon: "home" },
     { href: "/dashboard/super-admin/institution", label: "Institution", icon: "building" },
@@ -47,6 +51,7 @@ const HOME_BY_ROLE: Record<string, string> = {
   FACILITATOR: "/dashboard/facilitator",
   ADMIN: "/dashboard/admin",
   SUPER_ADMIN: "/dashboard/super-admin",
+  PLATFORM: "/dashboard/platform",
 };
 
 const ROLE_LABEL: Record<string, string> = {
@@ -54,9 +59,11 @@ const ROLE_LABEL: Record<string, string> = {
   FACILITATOR: "Facilitator",
   ADMIN: "Admin",
   SUPER_ADMIN: "Super Admin",
+  PLATFORM: "Platform",
 };
 
-function highestRole(roles: string[]): string {
+function highestRole(roles: string[], platformAdmin: boolean): string {
+  if (roles.length === 0 && platformAdmin) return "PLATFORM"; // platform admin outside any institution
   if (roles.includes("SUPER_ADMIN")) return "SUPER_ADMIN";
   if (roles.includes("ADMIN")) return "ADMIN";
   if (roles.includes("FACILITATOR")) return "FACILITATOR";
@@ -102,7 +109,7 @@ function initials(name: string) {
 }
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { roles, logout, isLoading } = useAuth();
+  const { roles, logout, isLoading, platformAdmin } = useAuth();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [me, setMe] = useState<{ fullName: string; profileImageUrl: string | null } | null>(null);
@@ -119,7 +126,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return <div className="min-h-screen flex items-center justify-center text-gray-400 text-sm">Loading…</div>;
   }
 
-  const role = highestRole(roles);
+  const role = highestRole(roles, platformAdmin);
   const navItems = NAV_BY_ROLE[role] || [];
   // Longest matching href wins, so sub-pages (e.g. a cohort's detail page)
   // highlight their parent without "/dashboard/student" swallowing every student page.
@@ -204,9 +211,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <p className="truncate text-xs text-blue-200/60">{ROLE_LABEL[role]}</p>
             </div>
           </div>
+          <InstitutionSwitcher />
           <button
             onClick={logout}
-            className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm text-blue-100/80 ring-1 ring-white/10 transition-colors hover:bg-white/10 hover:text-white"
+            className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm text-blue-100/80 ring-1 ring-white/10 transition-colors hover:bg-white/10 hover:text-white"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3" /><path d="M10 17l5-5-5-5" /><path d="M15 12H4" />

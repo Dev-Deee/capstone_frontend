@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { cohortApi, staffInviteApi, adminRoleApi } from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
 
 export default function StaffInvitesSection() {
   const [cohorts, setCohorts] = useState<any[]>([]);
@@ -10,7 +11,10 @@ export default function StaffInvitesSection() {
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
-  const [targetRole, setTargetRole] = useState<"FACILITATOR" | "ADMIN">("FACILITATOR");
+  type InviteRole = "STUDENT" | "FACILITATOR" | "ADMIN" | "SUPER_ADMIN";
+  const { roles: myRoles } = useAuth();
+  const isOwner = myRoles.includes("SUPER_ADMIN");
+  const [targetRole, setTargetRole] = useState<InviteRole>("FACILITATOR");
   const [adminRoleId, setAdminRoleId] = useState("");
   const [cohortId, setCohortId] = useState("");
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -25,9 +29,10 @@ export default function StaffInvitesSection() {
     setMessage(null);
     try {
       await staffInviteApi.create({
-        firstName, lastName, email, phoneNumber, targetRole,
+        firstName: firstName || undefined, lastName: lastName || undefined, email,
+        phoneNumber: phoneNumber || undefined, targetRole,
         adminRolePublicId: targetRole === "ADMIN" ? adminRoleId : undefined,
-        cohortPublicId: targetRole === "ADMIN" && cohortId ? cohortId : undefined,
+        cohortPublicId: (targetRole === "ADMIN" || targetRole === "STUDENT") && cohortId ? cohortId : undefined,
       });
       setMessage({ type: "success", text: `Invite sent to ${email}.` });
       setFirstName(""); setLastName(""); setEmail(""); setPhoneNumber(""); setAdminRoleId(""); setCohortId("");
@@ -51,12 +56,12 @@ export default function StaffInvitesSection() {
         <form onSubmit={handleSubmit} className="space-y-3 max-w-md">
           <div className="flex gap-3">
             <input
-              type="text" required placeholder="First name"
+              type="text" placeholder="First name"
               value={firstName} onChange={(e) => setFirstName(e.target.value)}
               className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <input
-              type="text" required placeholder="Last name"
+              type="text" placeholder="Last name"
               value={lastName} onChange={(e) => setLastName(e.target.value)}
               className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
@@ -67,17 +72,20 @@ export default function StaffInvitesSection() {
             className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <input
-            type="text" required placeholder="Phone number"
+            type="text" placeholder="Phone number"
             value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)}
             className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <select
             value={targetRole}
-            onChange={(e) => setTargetRole(e.target.value as "FACILITATOR" | "ADMIN")}
+            onChange={(e) => { setTargetRole(e.target.value as InviteRole); setCohortId(""); }}
             className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
+            <option value="STUDENT">Student</option>
             <option value="FACILITATOR">Facilitator</option>
             <option value="ADMIN">Admin</option>
+            {/* Co-owners can only be invited by an owner. */}
+            {isOwner && <option value="SUPER_ADMIN">Super admin (co-owner)</option>}
           </select>
 
           {targetRole === "ADMIN" && (
@@ -109,6 +117,24 @@ export default function StaffInvitesSection() {
               </select>
             </>
           )}
+
+          {targetRole === "STUDENT" && (
+            <select
+              value={cohortId}
+              onChange={(e) => setCohortId(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">No cohort yet (they can join later with a code)</option>
+              {cohorts.map((c) => (
+                <option key={c.publicId} value={c.publicId}>Enroll in {c.name}</option>
+              ))}
+            </select>
+          )}
+
+          <p className="text-xs text-gray-500">
+            Name and phone are only needed if this person doesn&rsquo;t have a Cadence account yet.
+            If they do, they&rsquo;ll sign in and accept, and this institution is added to their account.
+          </p>
 
           <button type="submit" className="bg-blue-600 text-white text-sm font-medium px-5 py-2 rounded-lg hover:bg-blue-700">
             Send Invite

@@ -98,6 +98,21 @@ export interface AuthResponse {
   accessToken: string;
   refreshToken: string;
   roles: string[];
+  // Multi-tenant: the institution this session acts in (null only for a
+  // platform admin outside any institution).
+  institutionPublicId: string | null;
+  institutionName: string | null;
+  institutionSlug: string | null;
+  platformAdmin: boolean;
+}
+
+export interface MembershipSummary {
+  institutionPublicId: string;
+  institutionName: string;
+  institutionSlug: string;
+  roles: string[];
+  active: boolean;
+  current: boolean;
 }
 
 export const authApi = {
@@ -119,8 +134,13 @@ export const authApi = {
       body: JSON.stringify(data),
     }, false),
 
+  switchInstitution: (institutionPublicId: string) =>
+    request<AuthResponse>("/api/auth/switch-institution", {
+      method: "POST", body: JSON.stringify({ institutionPublicId }),
+    }),
+  // Brand-new invitee: sets a password, creates the account + membership, signs in.
   acceptInvite: (token: string, password: string) =>
-    request<void>("/api/auth/accept-invite", {
+    request<AuthResponse>("/api/auth/accept-invite", {
       method: "POST",
       body: JSON.stringify({ token, password }),
     }, false),
@@ -167,6 +187,9 @@ export const userApi = {
   getMyStudents: () => request<any[]>("/api/users/my-students"),
   getFacilitators: () => request<any[]>("/api/users/facilitators"),
   getMe: () => request<any>("/api/users/me"),
+  updateRoles: (publicId: string, roles: string[]) =>
+    request<any>(`/api/users/${publicId}/roles`, { method: "PUT", body: JSON.stringify({ roles }) }),
+  leaveInstitution: () => request<void>("/api/users/me/leave-institution", { method: "POST" }),
   uploadProfileImage: (file: File) => {
     const formData = new FormData();
     formData.append("file", file);
@@ -184,8 +207,33 @@ export const userApi = {
 
 // --- Institutions ---
 export const institutionApi = {
+  // Platform admins only — every tenant.
   getAll: () => request<any[]>("/api/institutions"),
   getOne: (publicId: string) => request<any>(`/api/institutions/${publicId}`),
+  current: () => request<any>("/api/institutions/current"),
+  mine: () => request<MembershipSummary[]>("/api/institutions/mine"),
+  // A signed-in user founds another institution (session switches into it).
+  found: (data: { name: string; slug: string }) =>
+    request<AuthResponse>("/api/institutions", { method: "POST", body: JSON.stringify(data) }),
+  // Public self-serve sign-up: new person + new institution.
+  signup: (data: {
+    institutionName: string; slug: string; firstName: string; lastName: string;
+    email: string; phoneNumber: string; password: string; consentGiven: boolean;
+  }) => request<AuthResponse>("/api/institutions/signup", { method: "POST", body: JSON.stringify(data) }, false),
+  slugAvailability: (slug: string) =>
+    request<{ slug: string; available: boolean; reason: string | null; suggestion: string | null }>(
+      `/api/institutions/slug-availability?slug=${encodeURIComponent(slug)}`, {}, false),
+};
+
+export const inviteApi = {
+  // Public: what the invite is for and whether the invitee already has an account.
+  preview: (token: string) => request<{
+    institutionName: string; institutionSlug: string; role: string; email: string;
+    firstName: string | null; accountExists: boolean;
+  }>(`/api/invites/${encodeURIComponent(token)}`, {}, false),
+  // Existing account, signed in as the invited email.
+  acceptAsMember: (token: string) =>
+    request<AuthResponse>("/api/invites/accept", { method: "POST", body: JSON.stringify({ token }) }),
 };
 
 // --- Cohorts ---
@@ -241,8 +289,9 @@ export const adminRoleApi = {
 // --- Staff Invites ---
 export const staffInviteApi = {
   create: (data: {
-    firstName: string; middleName?: string; lastName: string; email: string;
-    phoneNumber: string; targetRole: "FACILITATOR" | "ADMIN";
+    // Names and phone are only needed when the invitee has no Cadence account yet.
+    firstName?: string; middleName?: string; lastName?: string; email: string;
+    phoneNumber?: string; targetRole: "STUDENT" | "FACILITATOR" | "ADMIN" | "SUPER_ADMIN";
     adminRolePublicId?: string; cohortPublicId?: string;
   }) => request<void>("/api/auth/staff-invites", { method: "POST", body: JSON.stringify(data) }),
 };
