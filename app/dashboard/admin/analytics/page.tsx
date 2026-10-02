@@ -3,5 +3,5 @@
 import AnalyticsDashboard from "@/components/analytics/AnalyticsDashboard";
 
 export default function AdminAnalyticsPage() {
-  return <AnalyticsDashboard attendanceHref="/dashboard/admin/attendance" />;
+  return <AnalyticsDashboard attendanceHref="/dashboard/admin/attendance" cohortHref={(id) => `/dashboard/admin/cohorts/${id}`} />;
 }

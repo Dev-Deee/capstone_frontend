@@ -2,6 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { userApi } from "@/lib/api";
+import Avatar from "@/components/ui/Avatar";
+import ListToolbar from "@/components/ui/ListToolbar";
+import RowMenu from "@/components/ui/RowMenu";
+import { Table, Td, Th, Tr } from "@/components/ui/Table";
 
 type Student = {
   publicId: string;
@@ -12,9 +16,6 @@ type Student = {
   cohortName: string | null;
   active: boolean;
 };
-
-const inputClass =
-  "w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500";
 
 // A facilitator's roster: students in the cohorts they teach. Facilitators can
 // deactivate/reactivate a student's access; editing and deleting stay with admins.
@@ -37,12 +38,11 @@ export default function MyStudentsSection() {
     () => Array.from(new Set(students.map((s) => s.cohortName).filter(Boolean))) as string[],
     [students]);
 
-  const visible = useMemo(() => {
+  const matching = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return students.filter((s) =>
-      (cohort === "ALL" || s.cohortName === cohort) &&
-      (!q || [s.fullName, s.email, s.institutionStudentId].some((v) => v?.toLowerCase().includes(q))));
-  }, [students, search, cohort]);
+    return students.filter((s) => !q || [s.fullName, s.email, s.institutionStudentId].some((v) => v?.toLowerCase().includes(q)));
+  }, [students, search]);
+  const visible = matching.filter((s) => cohort === "ALL" || s.cohortName === cohort);
 
   async function toggleActive(s: Student) {
     setBusyId(s.publicId);
@@ -75,21 +75,20 @@ export default function MyStudentsSection() {
         </div>
       )}
 
-      <div className="flex flex-wrap gap-3 mb-4">
-        <input
-          type="search" placeholder="Search name, email or student ID…"
-          value={search} onChange={(e) => setSearch(e.target.value)}
-          className={`${inputClass} max-w-sm`}
+      <div className="rounded-2xl border border-gray-200 bg-surface shadow-sm">
+        <ListToolbar
+          count={visible.length}
+          noun={visible.length === 1 ? "student" : "students"}
+          segments={cohorts.length > 1 ? [
+            { value: "ALL", label: "All", count: matching.length },
+            ...cohorts.map((c) => ({ value: c, label: c, count: matching.filter((s) => s.cohortName === c).length })),
+          ] : undefined}
+          segment={cohort}
+          onSegment={setCohort}
+          search={search}
+          onSearch={setSearch}
+          searchPlaceholder="Name, email or student ID…"
         />
-        {cohorts.length > 1 && (
-          <select value={cohort} onChange={(e) => setCohort(e.target.value)} className={`${inputClass} w-auto`}>
-            <option value="ALL">All cohorts</option>
-            {cohorts.map((c) => <option key={c} value={c}>{c}</option>)}
-          </select>
-        )}
-      </div>
-
-      <div className="bg-surface rounded-xl border border-gray-200 shadow-sm">
         {isLoading ? (
           <p className="p-6 text-sm text-gray-400 animate-pulse">Loading…</p>
         ) : visible.length === 0 ? (
@@ -97,31 +96,48 @@ export default function MyStudentsSection() {
             {students.length === 0 ? "No students are enrolled in the cohorts you teach yet." : "No students match your search."}
           </p>
         ) : (
-          <ul className="divide-y divide-gray-100">
-            {visible.map((s) => (
-              <li key={s.publicId} className={`px-5 py-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm ${!s.active ? "bg-gray-50" : ""}`}>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <p className={`font-medium ${s.active ? "text-gray-900" : "text-gray-500"}`}>{s.fullName}</p>
-                    <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${
+          <Table>
+            <thead>
+              <tr>
+                <Th>Name</Th>
+                <Th className="hidden md:table-cell">Student ID</Th>
+                <Th className="hidden sm:table-cell">Cohort</Th>
+                <Th>Status</Th>
+                <Th align="right"><span className="sr-only">Actions</span></Th>
+              </tr>
+            </thead>
+            <tbody>
+              {visible.map((s) => (
+                <Tr key={s.publicId} muted={!s.active}>
+                  <Td>
+                    <div className="flex items-center gap-3 min-w-0">
+                      <Avatar name={s.fullName} />
+                      <div className="min-w-0">
+                        <p className="truncate font-medium text-gray-900">{s.fullName}</p>
+                        <p className="truncate text-xs text-gray-400">{s.email}</p>
+                      </div>
+                    </div>
+                  </Td>
+                  <Td className="hidden md:table-cell text-gray-600">{s.institutionStudentId ?? <span className="text-gray-300">—</span>}</Td>
+                  <Td className="hidden sm:table-cell whitespace-nowrap text-gray-600">{s.cohortName ?? <span className="text-gray-300">—</span>}</Td>
+                  <Td>
+                    <span className={`whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-medium ${
                       s.active ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
                     }`}>
                       {s.active ? "Active" : "Deactivated"}
                     </span>
-                  </div>
-                  <p className="text-xs text-gray-400 mt-0.5 truncate">
-                    {s.email}{s.institutionStudentId ? ` · ${s.institutionStudentId}` : ""}{s.cohortName ? ` · ${s.cohortName}` : ""}
-                  </p>
-                </div>
-                <button
-                  disabled={busyId === s.publicId} onClick={() => toggleActive(s)}
-                  className={`text-xs hover:underline disabled:opacity-50 ${s.active ? "text-amber-700" : "text-green-700"}`}
-                >
-                  {busyId === s.publicId ? "…" : s.active ? "Deactivate" : "Activate"}
-                </button>
-              </li>
-            ))}
-          </ul>
+                  </Td>
+                  <Td align="right">
+                    {busyId === s.publicId ? <span className="text-xs text-gray-400">…</span> : (
+                      <RowMenu label={`Actions for ${s.fullName}`} items={[
+                        { label: s.active ? "Deactivate" : "Activate", onSelect: () => toggleActive(s), tone: s.active ? "warn" : undefined },
+                      ]} />
+                    )}
+                  </Td>
+                </Tr>
+              ))}
+            </tbody>
+          </Table>
         )}
       </div>
     </div>

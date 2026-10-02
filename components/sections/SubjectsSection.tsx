@@ -1,7 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { subjectApi } from "@/lib/api";
+import ListToolbar from "@/components/ui/ListToolbar";
+import RowMenu from "@/components/ui/RowMenu";
+import { Table, Td, Th, Tr } from "@/components/ui/Table";
 
 export default function SubjectsSection() {
   const [subjects, setSubjects] = useState<any[]>([]);
@@ -11,6 +14,10 @@ export default function SubjectsSection() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [search, setSearch] = useState("");
+  const q = search.trim().toLowerCase();
+  const visible = subjects.filter((s) => !q || [s.name, s.description].some((v: string | null) => v?.toLowerCase().includes(q)));
 
   useEffect(() => {
     subjectApi.getAll().then(setSubjects).catch(() => {});
@@ -24,6 +31,7 @@ export default function SubjectsSection() {
       setSubjects((prev) => [...prev, subject]);
       setMessage({ type: "success", text: `Subject "${subject.name}" created.` });
       setName(""); setDescription("");
+      setCreating(false);
     } catch (err) {
       setMessage({ type: "error", text: err instanceof Error ? err.message : "Failed to create subject" });
     }
@@ -61,9 +69,25 @@ export default function SubjectsSection() {
             </div>
         )}
 
-        <div className="bg-surface rounded-xl border border-gray-200 shadow-sm">
-          <div className="p-6 border-b border-gray-100">
-            <h2 className="text-sm font-semibold text-gray-700 mb-4">Create Subject</h2>
+        <div className="rounded-2xl border border-gray-200 bg-surface shadow-sm">
+          <ListToolbar
+            count={visible.length}
+            noun={visible.length === 1 ? "subject" : "subjects"}
+            search={search}
+            onSearch={setSearch}
+            searchPlaceholder="Subject…"
+          >
+            <button
+              type="button"
+              onClick={() => setCreating((c) => !c)}
+              className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
+            >
+              {creating ? "Close" : "New subject"}
+            </button>
+          </ListToolbar>
+
+          {creating && (
+            <div className="border-b border-gray-100 bg-gray-50 px-4 py-4">
             <form onSubmit={handleSubmit} className="space-y-3 max-w-md">
               <input
                   type="text" required placeholder="Subject name"
@@ -79,52 +103,62 @@ export default function SubjectsSection() {
                 Create Subject
               </button>
             </form>
-          </div>
+            </div>
+          )}
 
-          <div className="p-6">
-            <h2 className="text-sm font-semibold text-gray-700 mb-3">Existing Subjects</h2>
-            {subjects.length === 0 ? (
-                <p className="text-sm text-gray-400">No subjects yet.</p>
-            ) : (
-                <ul className="divide-y divide-gray-100">
-                  {subjects.map((s) => (
-                      <li key={s.publicId} className="py-2.5 text-sm text-gray-700 flex items-center justify-between gap-3">
-                        {editingId === s.publicId ? (
-                            <div className="flex items-center gap-2 flex-1">
-                              <input
-                                  type="text"
-                                  value={editName}
-                                  onChange={(e) => setEditName(e.target.value)}
-                                  className="flex-1 px-2 py-1 border border-gray-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                  autoFocus
-                              />
-                              <button
-                                  onClick={() => handleSaveEdit(s.publicId)}
-                                  disabled={isSaving}
-                                  className="text-xs bg-blue-600 text-white px-3 py-1 rounded-md hover:bg-blue-700 disabled:opacity-50"
-                              >
-                                {isSaving ? "Saving…" : "Save"}
-                              </button>
-                              <button
-                                  onClick={() => setEditingId(null)}
-                                  className="text-xs text-gray-500 hover:text-gray-900"
-                              >
-                                Cancel
-                              </button>
-                            </div>
-                        ) : (
-                            <>
-                              <span>{s.name}</span>
-                              <button onClick={() => startEdit(s)} className="text-xs text-blue-600 hover:underline">
-                                Edit
-                              </button>
-                            </>
-                        )}
-                      </li>
-                  ))}
-                </ul>
-            )}
-          </div>
+          {subjects.length === 0 ? (
+            <p className="p-6 text-sm text-gray-400">No subjects yet — add the first one.</p>
+          ) : visible.length === 0 ? (
+            <p className="p-6 text-sm text-gray-400">No subjects match.</p>
+          ) : (
+            <Table>
+              <thead>
+                <tr>
+                  <Th>Subject</Th>
+                  <Th className="hidden sm:table-cell">Description</Th>
+                  <Th align="right"><span className="sr-only">Actions</span></Th>
+                </tr>
+              </thead>
+              <tbody>
+                {visible.map((s) => (
+                  <Fragment key={s.publicId}>
+                    <Tr>
+                      <Td className="font-medium text-gray-900">{s.name}</Td>
+                      <Td className="hidden sm:table-cell text-gray-500">{s.description || <span className="text-gray-300">—</span>}</Td>
+                      <Td align="right">
+                        <RowMenu label={`Actions for ${s.name}`} items={[{ label: "Rename", onSelect: () => startEdit(s) }]} />
+                      </Td>
+                    </Tr>
+                    {editingId === s.publicId && (
+                      <tr>
+                        <td colSpan={3} className="px-4 pb-4">
+                          <div className="flex flex-wrap items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 p-3">
+                            <input
+                              type="text"
+                              value={editName}
+                              onChange={(e) => setEditName(e.target.value)}
+                              className="min-w-[12rem] flex-1 rounded-lg border border-gray-200 bg-surface px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              autoFocus
+                            />
+                            <button
+                              onClick={() => handleSaveEdit(s.publicId)}
+                              disabled={isSaving}
+                              className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                            >
+                              {isSaving ? "Saving…" : "Save"}
+                            </button>
+                            <button onClick={() => setEditingId(null)} className="text-sm text-gray-500 hover:text-gray-900">
+                              Cancel
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                ))}
+              </tbody>
+            </Table>
+          )}
         </div>
       </div>
   );

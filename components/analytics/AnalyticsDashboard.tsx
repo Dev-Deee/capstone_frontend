@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Tr } from "@/components/ui/Table";
 import { adminAttendanceApi, analyticsApi, type InstitutionAnalytics } from "@/lib/api";
 import BarChart from "@/components/charts/BarChart";
 import LineChart from "@/components/charts/LineChart";
@@ -62,7 +64,8 @@ const icon = (d: React.ReactNode) => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{d}</svg>
 );
 
-export default function AnalyticsDashboard({ attendanceHref }: { attendanceHref: string }) {
+export default function AnalyticsDashboard({ attendanceHref, cohortHref }: { attendanceHref: string; cohortHref: (publicId: string) => string }) {
+  const router = useRouter();
   const [days, setDays] = useState(30);
   const [data, setData] = useState<InstitutionAnalytics | null>(null);
   const [cohorts, setCohorts] = useState<Cohort[]>([]);
@@ -236,9 +239,9 @@ export default function AnalyticsDashboard({ attendanceHref }: { attendanceHref:
                     <th className="px-2 pb-2 font-medium text-right">Campus attendance</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody>
                   {cohorts.map((c) => (
-                    <tr key={c.cohortPublicId}>
+                    <Tr key={c.cohortPublicId} onOpen={() => router.push(cohortHref(c.cohortPublicId))}>
                       <td className="px-2 py-2.5 text-gray-800">{c.cohortName}</td>
                       <td className="px-2 py-2.5 text-right text-gray-500">{c.studentCount}</td>
                       <td className="px-2 py-2.5 text-right">
@@ -246,7 +249,7 @@ export default function AnalyticsDashboard({ attendanceHref }: { attendanceHref:
                           {c.averageRatePercent}%
                         </span>
                       </td>
-                    </tr>
+                    </Tr>
                   ))}
                 </tbody>
               </table>
