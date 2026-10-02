@@ -95,7 +95,7 @@ function AcceptInviteContent() {
                 className="inline-flex h-11 w-full items-center justify-center rounded-lg bg-blue-600 text-[15px] font-medium text-white hover:bg-blue-700 disabled:opacity-50">
                 {submitting ? "Joining…" : `Accept and open ${preview.institutionName}`}
               </button>
-              <button onClick={() => logout()} className="w-full text-center text-sm text-gray-500 hover:text-gray-800">
+              <button onClick={() => logout(here)} className="w-full text-center text-sm text-gray-500 hover:text-gray-800">
                 Not {preview.email}? Sign out and use that account
               </button>
             </>

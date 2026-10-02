@@ -12,7 +12,7 @@ const roleWord = (roles: string[]) =>
 // Lives in the sidebar's account card: shows the institution this session is
 // working in, and opens upward to switch, create another, or leave.
 export default function InstitutionSwitcher() {
-  const { switchInstitution, platformAdmin, logout } = useAuth();
+  const { switchInstitution, platformAdmin, logout, institutionPublicId } = useAuth();
   const [mine, setMine] = useState<MembershipSummary[]>([]);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -20,7 +20,9 @@ export default function InstitutionSwitcher() {
   const [error, setError] = useState<string | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 
-  useEffect(() => { institutionApi.mine().then(setMine).catch(() => {}); }, []);
+  // Reload whenever the session's institution changes, so the label and the
+  // "switch to" list always reflect where this session is actually working.
+  useEffect(() => { institutionApi.mine().then(setMine).catch(() => {}); }, [institutionPublicId]);
 
   // Close on outside click / Escape.
   useEffect(() => {

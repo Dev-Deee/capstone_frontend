@@ -14,7 +14,8 @@ interface AuthState {
   isLoading: boolean;
   // next: an in-app path to return to after signing in (e.g. an invite link).
   login: (identifier: string, password: string, next?: string) => Promise<void>;
-  logout: () => Promise<void>;
+  // returnTo: an in-app path to come back to after signing in again.
+  logout: (returnTo?: string) => Promise<void>;
   // Adopt a session returned by sign-up, invite acceptance or an institution switch.
   enterSession: (response: AuthResponse, next?: string) => void;
   switchInstitution: (institutionPublicId: string) => Promise<void>;
@@ -82,7 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     enterSession(await authApi.switchInstitution(target));
   }
 
-  async function logout() {
+  async function logout(returnTo?: string) {
     try {
       await authApi.logout();
     } catch {
@@ -95,7 +96,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setInstitutionPublicId(null);
       setPlatformAdmin(false);
       setHasToken(false);
-      router.push("/login");
+      const safe = returnTo && returnTo.startsWith("/") && !returnTo.startsWith("//") ? returnTo : null;
+      router.push(safe ? `/login?next=${encodeURIComponent(safe)}` : "/login");
     }
   }
 

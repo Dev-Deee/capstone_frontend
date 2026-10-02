@@ -213,7 +213,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
           <InstitutionSwitcher />
           <button
-            onClick={logout}
+            onClick={() => logout()}
             className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm text-blue-100/80 ring-1 ring-white/10 transition-colors hover:bg-white/10 hover:text-white"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
