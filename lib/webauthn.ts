@@ -1,4 +1,4 @@
-import { authApi } from "./api";
+import type { BiometricChallenge, CheckInAssertion } from "./api";
 
 function bufferToBase64Url(buffer: ArrayBuffer): string {
   return btoa(String.fromCharCode(...new Uint8Array(buffer)))
@@ -47,4 +47,47 @@ export async function registerBiometric(deviceLabel: string) {
       deviceLabel,
     }),
   });
+}
+
+// PRD Section 6.12 — the biometric step of check-in. The fingerprint / Face ID
+// match happens on the device; only the signed assertion leaves it.
+//
+// "cancelled": NotAllowedError. Browsers deliberately report a dismissed prompt,
+// a timeout, and "no credential for this site on this device" the same way, so
+// these can't be told apart — all are worth a retry, then the facilitator.
+// "unavailable": anything else (no WebAuthn support, security/state errors) —
+// a retry rarely helps; the facilitator's manual override is the way through.
+export class BiometricError extends Error {
+  constructor(public kind: "cancelled" | "unavailable") {
+    super(kind === "cancelled" ? "Fingerprint / Face ID was cancelled" : "This device couldn't run fingerprint / Face ID");
+  }
+}
+
+export async function signCheckIn(c: BiometricChallenge): Promise<CheckInAssertion> {
+  if (typeof window === "undefined" || !window.PublicKeyCredential) throw new BiometricError("unavailable");
+  let credential: PublicKeyCredential | null;
+  try {
+    credential = (await navigator.credentials.get({
+      publicKey: {
+        challenge: base64UrlToBuffer(c.challenge),
+        rpId: c.rpId,
+        allowCredentials: c.credentialIds.map((id) => ({ type: "public-key" as const, id: base64UrlToBuffer(id) })),
+        userVerification: "required",
+        timeout: 60_000,
+      },
+    })) as PublicKeyCredential | null;
+  } catch (err) {
+    if (err instanceof DOMException && (err.name === "NotAllowedError" || err.name === "AbortError")) {
+      throw new BiometricError("cancelled");
+    }
+    throw new BiometricError("unavailable");
+  }
+  if (!credential) throw new BiometricError("cancelled");
+  const response = credential.response as AuthenticatorAssertionResponse;
+  return {
+    credentialId: bufferToBase64Url(credential.rawId),
+    authenticatorData: bufferToBase64Url(response.authenticatorData),
+    clientDataJSON: bufferToBase64Url(response.clientDataJSON),
+    signature: bufferToBase64Url(response.signature),
+  };
 }
