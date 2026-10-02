@@ -278,6 +278,9 @@ export const studentAttendanceApi = {
   getHistory: () => request<Array<{
     sessionPublicId: string; date: string; status: string; checkedInAt: string | null;
   }>>("/api/resumption-attendance/me/history"),
+  getClassHistory: () => request<Array<{
+    sessionPublicId: string; date: string; subjectName: string; status: string; markedAt: string | null;
+  }>>("/api/students/me/session-attendance-history"),
 };
 
 // --- Resumption Sessions & Attendance (Tier 1) ---
