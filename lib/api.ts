@@ -178,6 +178,7 @@ export const authApi = {
 // --- Users ---
 export const userApi = {
   getAll: () => request<any[]>("/api/users"),
+  getOne: (publicId: string) => request<any>(`/api/users/${publicId}`),
   update: (publicId: string, data: {
     firstName: string; middleName?: string; lastName: string; phoneNumber?: string; institutionStudentId?: string;
   }) => request<any>(`/api/users/${publicId}`, { method: "PATCH", body: JSON.stringify(data) }),
@@ -408,8 +409,16 @@ export interface InstitutionAnalytics {
   trend: Array<{ date: string; resumptionRatePercent: number | null; classRatePercent: number | null }>;
 }
 
+export interface StudentAttendanceDetail {
+  cohortPublicId: string | null;
+  cohortName: string | null;
+  resumption: Array<{ sessionPublicId: string; date: string; status: string; checkedInAt: string | null }>;
+  classes: Array<{ sessionPublicId: string; date: string; subjectName: string; status: string; markedAt: string | null }>;
+}
+
 export const analyticsApi = {
   get: (days: number) => request<InstitutionAnalytics>(`/api/admin/analytics?days=${days}`),
+  student: (publicId: string) => request<StudentAttendanceDetail>(`/api/admin/analytics/students/${publicId}`),
 };
 
 export const adminAttendanceApi = {
