@@ -163,7 +163,7 @@ export default function StudentDashboard() {
             <h2 className="text-sm font-semibold text-gray-700 mb-1">Join a cohort</h2>
             <p className="text-sm text-gray-500 mb-4">
               {inCohort
-                ? "Enter an invite code from your institution. You can only be in one cohort at a time, so if the code is for a different cohort, an admin will need to move you."
+                ? "Enter an invite code from your institution. You can only be in one cohort at a time, so if the code is for a different cohort, an admin or super admin will need to move you."
                 : "Enter the invite code your institution sent you by email or text."}
             </p>
             <form onSubmit={handleJoinCohort} className="flex gap-2 max-w-md">

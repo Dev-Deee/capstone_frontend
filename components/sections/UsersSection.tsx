@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { userApi, authApi } from "@/lib/api";
+import { userApi, authApi, cohortApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 
 type User = {
@@ -14,6 +14,7 @@ type User = {
   phoneNumber: string | null;
   institutionStudentId: string | null;
   roles: string[];
+  cohortPublicId: string | null;
   cohortName: string | null;
   active: boolean;
   accountPending: boolean;
@@ -54,10 +55,14 @@ export default function UsersSection() {
   const [saving, setSaving] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [cohorts, setCohorts] = useState<{ publicId: string; name: string }[]>([]);
+  const [movingId, setMovingId] = useState<string | null>(null);
+  const [moveTarget, setMoveTarget] = useState("");
 
   useEffect(() => {
     Promise.all([userApi.getAll(), userApi.getMe()])
       .then(([list, me]) => { setUsers(list); setMeId(me.publicId); })
+      .then(() => cohortApi.getAll().then(setCohorts).catch(() => {}))
       .catch((err) => {
         const text = err instanceof Error ? err.message : "Failed to load users";
         setMessage({
@@ -137,6 +142,37 @@ export default function UsersSection() {
       });
     } catch (err) {
       setMessage({ type: "error", text: err instanceof Error ? err.message : "Failed to change status" });
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  function startMove(u: User) {
+    setMessage(null);
+    setEditingId(null);
+    setConfirmDeleteId(null);
+    setMovingId(u.publicId);
+    setMoveTarget("");
+  }
+
+  // Admin/super-admin only: students can't move themselves between cohorts.
+  async function handleMove(e: React.FormEvent, u: User) {
+    e.preventDefault();
+    if (!moveTarget) return;
+    setBusyId(u.publicId);
+    setMessage(null);
+    try {
+      const updated: User = await cohortApi.enrollStudent(moveTarget, u.publicId);
+      replaceUser(updated);
+      setMovingId(null);
+      setMessage({
+        type: "success",
+        text: u.cohortName
+          ? `${u.fullName} moved from ${u.cohortName} to ${updated.cohortName}.`
+          : `${u.fullName} added to ${updated.cohortName}.`,
+      });
+    } catch (err) {
+      setMessage({ type: "error", text: err instanceof Error ? err.message : "Failed to change cohort" });
     } finally {
       setBusyId(null);
     }
@@ -264,6 +300,11 @@ export default function UsersSection() {
                           {canEdit && (
                             <button onClick={() => startEdit(u)} className="text-blue-600 hover:underline">Edit</button>
                           )}
+                          {canEdit && u.roles.includes("STUDENT") && (
+                            <button onClick={() => startMove(u)} className="text-blue-600 hover:underline">
+                              {u.cohortName ? "Change cohort" : "Add to cohort"}
+                            </button>
+                          )}
                           {canChangeStatus && (
                             <>
                               <button
@@ -283,6 +324,42 @@ export default function UsersSection() {
                         </div>
                       )}
                     </div>
+                  )}
+
+                  {movingId === u.publicId && (
+                    <form onSubmit={(e) => handleMove(e, u)} className="mt-3 p-4 rounded-lg bg-gray-50 border border-gray-100 space-y-3 max-w-xl">
+                      <p className="text-sm text-gray-700">
+                        {u.cohortName
+                          ? <>Move <span className="font-medium">{u.fullName}</span> out of <span className="font-medium">{u.cohortName}</span> to:</>
+                          : <>Add <span className="font-medium">{u.fullName}</span> to:</>}
+                      </p>
+                      <select
+                        required value={moveTarget} onChange={(e) => setMoveTarget(e.target.value)}
+                        className={inputClass}
+                      >
+                        <option value="">Select a cohort…</option>
+                        {cohorts.filter((c) => c.publicId !== u.cohortPublicId).map((c) => (
+                          <option key={c.publicId} value={c.publicId}>{c.name}</option>
+                        ))}
+                      </select>
+                      {u.cohortName && (
+                        <p className="text-xs text-gray-500">
+                          Their attendance and submissions in {u.cohortName} are kept. In the new cohort, attendance and
+                          assignment rates count from today.
+                        </p>
+                      )}
+                      <div className="flex gap-2">
+                        <button
+                          type="submit" disabled={!moveTarget || busyId === u.publicId}
+                          className="bg-blue-600 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                        >
+                          {busyId === u.publicId ? "Saving…" : u.cohortName ? "Move student" : "Add to cohort"}
+                        </button>
+                        <button type="button" onClick={() => setMovingId(null)} className="border border-gray-200 text-sm font-medium px-4 py-2 rounded-lg hover:bg-white">
+                          Cancel
+                        </button>
+                      </div>
+                    </form>
                   )}
                 </li>
               );
