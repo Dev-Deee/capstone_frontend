@@ -83,7 +83,7 @@ export default function LandingPage() {
           </Reveal>
           <div className="mt-14 grid gap-px overflow-hidden rounded-2xl border border-gray-200 bg-gray-200 sm:grid-cols-2">
             {PILLARS.map((p, i) => (
-              <Reveal key={p.n} delay={i * 80} className="group bg-white p-8 transition-colors duration-300 hover:bg-blue-50/40 sm:p-10">
+              <Reveal key={p.n} delay={i * 80} className="group bg-surface p-8 transition-colors duration-300 hover:bg-blue-50/40 sm:p-10">
                 <p className="font-display text-[28px] leading-none text-blue-600/70 transition-colors duration-300 group-hover:text-blue-600">{p.n}</p>
                 <h3 className="mt-6 text-lg font-semibold tracking-tight text-gray-900">{p.title}</h3>
                 <p className="mt-2 text-[15px] leading-relaxed text-gray-600">{p.body}</p>
@@ -103,7 +103,7 @@ export default function LandingPage() {
             <div className="absolute left-0 right-0 top-[19px] hidden h-px bg-gray-200 sm:block" aria-hidden="true" />
             {STEPS.map((s, i) => (
               <Reveal as="li" key={s.title} delay={i * 100} className="relative">
-                <span className="relative grid h-10 w-10 place-items-center rounded-full border border-gray-200 bg-white text-sm font-semibold text-gray-900 shadow-sm">
+                <span className="relative grid h-10 w-10 place-items-center rounded-full border border-gray-200 bg-surface text-sm font-semibold text-gray-900 shadow-sm">
                   {i + 1}
                 </span>
                 <h3 className="mt-5 text-lg font-semibold tracking-tight text-gray-900">{s.title}</h3>

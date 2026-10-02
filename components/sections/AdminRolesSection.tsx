@@ -85,7 +85,7 @@ export default function AdminRolesSection() {
         </div>
       )}
 
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+      <div className="bg-surface rounded-xl border border-gray-200 shadow-sm">
         <div className="p-6 border-b border-gray-100">
           <h2 className="text-sm font-semibold text-gray-700 mb-4">Create Admin Role</h2>
           <form onSubmit={handleCreate} className="space-y-3 max-w-lg">

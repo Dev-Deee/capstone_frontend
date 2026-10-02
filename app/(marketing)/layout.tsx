@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 
 export default function MarketingLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen bg-white text-gray-900">
+    <div className="min-h-screen bg-surface text-gray-900">
       <SiteHeader />
       {children}
       <footer className="border-t border-gray-100">

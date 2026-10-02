@@ -89,7 +89,7 @@ export default function MyStudentsSection() {
         )}
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+      <div className="bg-surface rounded-xl border border-gray-200 shadow-sm">
         {isLoading ? (
           <p className="p-6 text-sm text-gray-400 animate-pulse">Loading…</p>
         ) : visible.length === 0 ? (

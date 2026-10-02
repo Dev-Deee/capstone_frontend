@@ -75,7 +75,7 @@ export default function AttendSessionPage() {
   if (notFound || !sessionInfo) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-        <div className="bg-white rounded-lg border border-gray-200 p-5 max-w-sm w-full text-center">
+        <div className="bg-surface rounded-lg border border-gray-200 p-5 max-w-sm w-full text-center">
           <p className="text-sm font-medium text-gray-900 mb-1">Session not available</p>
           <p className="text-sm text-gray-400">This attendance session is not currently open.</p>
         </div>
@@ -85,7 +85,7 @@ export default function AttendSessionPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="bg-white rounded-lg border border-gray-200 p-5 max-w-sm w-full">
+      <div className="bg-surface rounded-lg border border-gray-200 p-5 max-w-sm w-full">
         <h1 className="text-base font-semibold text-gray-900 mb-1">Mark Attendance</h1>
         <p className="text-sm text-gray-500 mb-4">
           You&apos;re marking attendance for:{" "}

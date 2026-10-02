@@ -6,8 +6,9 @@ import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { userApi } from "@/lib/api";
 import InstitutionSwitcher from "@/components/InstitutionSwitcher";
+import ThemeToggle from "@/components/ThemeToggle";
 
-type IconName = "home" | "book" | "settings" | "people" | "calendar" | "building" | "layers" | "mail" | "classes";
+type IconName = "home" | "book" | "settings" | "people" | "calendar" | "building" | "layers" | "mail" | "classes" | "chart";
 
 interface NavItem {
   href: string;
@@ -28,6 +29,7 @@ const NAV_BY_ROLE: Record<string, NavItem[]> = {
   ],
   ADMIN: [
     { href: "/dashboard/admin", label: "Home", icon: "home" },
+    { href: "/dashboard/admin/analytics", label: "Analytics", icon: "chart" },
     { href: "/dashboard/admin/people", label: "People", icon: "people" },
     { href: "/dashboard/admin/cohorts", label: "Cohorts & Subjects", icon: "layers" },
     { href: "/dashboard/admin/attendance", label: "Attendance", icon: "calendar" },
@@ -37,6 +39,7 @@ const NAV_BY_ROLE: Record<string, NavItem[]> = {
   ],
   SUPER_ADMIN: [
     { href: "/dashboard/super-admin", label: "Home", icon: "home" },
+    { href: "/dashboard/super-admin/analytics", label: "Analytics", icon: "chart" },
     { href: "/dashboard/super-admin/institution", label: "Institution", icon: "building" },
     { href: "/dashboard/super-admin/cohorts", label: "Cohorts & Subjects", icon: "layers" },
     { href: "/dashboard/super-admin/invites", label: "Invites", icon: "mail" },
@@ -81,6 +84,7 @@ const ICON_PATHS: Record<IconName, React.ReactNode> = {
   layers: <><path d="m12 3 9 5-9 5-9-5 9-5z" /><path d="m3 13 9 5 9-5" /></>,
   mail: <><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3.5 6.5 8.5 6 8.5-6" /></>,
   classes: <><rect x="3" y="4" width="18" height="12" rx="2" /><path d="M8 20h8M12 16v4" /></>,
+  chart: <><path d="M3 3v18h18" /><path d="M7 15v2M11 11v6M15 7v10M19 12v5" /></>,
 };
 
 function Icon({ name }: { name: IconName }) {
@@ -212,6 +216,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
           </div>
           <InstitutionSwitcher />
+          <div className="mt-2 flex items-center justify-between px-1">
+            <span className="text-xs text-blue-100/70">Dark mode</span>
+            <ThemeToggle tone="onDark" />
+          </div>
           <button
             onClick={() => logout()}
             className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm text-blue-100/80 ring-1 ring-white/10 transition-colors hover:bg-white/10 hover:text-white"

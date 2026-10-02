@@ -52,12 +52,12 @@ export default function LoginPage() {
   }
 
   const inputClass =
-    "w-full h-11 px-3.5 rounded-lg border border-gray-300 bg-white text-[15px] text-gray-900 placeholder:text-gray-400 " +
+    "w-full h-11 px-3.5 rounded-lg border border-gray-300 bg-surface text-[15px] text-gray-900 placeholder:text-gray-400 " +
     "shadow-[0_1px_0_rgba(0,0,0,0.02)] transition-colors " +
     "focus:outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/15";
 
   return (
-    <div className="min-h-screen grid lg:grid-cols-[1.05fr_1fr] bg-white">
+    <div className="min-h-screen grid lg:grid-cols-[1.05fr_1fr] bg-surface">
       {/* ── Brand panel ─────────────────────────────────────────────── */}
       <aside className="relative overflow-hidden bg-[#0c1f4a] text-white px-6 py-8 sm:px-10 lg:px-14 lg:py-12 flex flex-col">
         {/* Depth: soft light, fine grid, concentric rings */}
@@ -204,7 +204,7 @@ export default function LoginPage() {
 
           <Link
             href="/register"
-            className="mt-5 flex h-11 w-full items-center justify-center rounded-lg border border-gray-300 bg-white text-[15px] font-medium text-gray-800 transition-colors hover:border-gray-400 hover:bg-gray-50"
+            className="mt-5 flex h-11 w-full items-center justify-center rounded-lg border border-gray-300 bg-surface text-[15px] font-medium text-gray-800 transition-colors hover:border-gray-400 hover:bg-gray-50"
           >
             Register with your invite code
           </Link>

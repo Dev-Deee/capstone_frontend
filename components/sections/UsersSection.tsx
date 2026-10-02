@@ -243,7 +243,7 @@ export default function UsersSection() {
         </select>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+      <div className="bg-surface rounded-xl border border-gray-200 shadow-sm">
         {isLoading ? (
           <p className="p-6 text-sm text-gray-400 animate-pulse">Loading…</p>
         ) : visible.length === 0 ? (
@@ -369,7 +369,7 @@ export default function UsersSection() {
                           className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">
                           {busyId === u.publicId ? "Saving…" : "Save roles"}
                         </button>
-                        <button onClick={() => setRolesId(null)} className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium hover:bg-white">Cancel</button>
+                        <button onClick={() => setRolesId(null)} className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium hover:bg-surface">Cancel</button>
                       </div>
                     </div>
                   )}
@@ -403,7 +403,7 @@ export default function UsersSection() {
                         >
                           {busyId === u.publicId ? "Saving…" : u.cohortName ? "Move student" : "Add to cohort"}
                         </button>
-                        <button type="button" onClick={() => setMovingId(null)} className="border border-gray-200 text-sm font-medium px-4 py-2 rounded-lg hover:bg-white">
+                        <button type="button" onClick={() => setMovingId(null)} className="border border-gray-200 text-sm font-medium px-4 py-2 rounded-lg hover:bg-surface">
                           Cancel
                         </button>
                       </div>

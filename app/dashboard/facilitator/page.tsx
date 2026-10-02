@@ -164,7 +164,7 @@ export default function FacilitatorDashboard() {
       />
 
       {tab === "class" && (
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+      <div className="bg-surface rounded-xl border border-gray-200 shadow-sm">
         {/* My Assignments */}
         <div className="p-6 border-b border-gray-100">
           <h2 className="text-sm font-semibold text-gray-700 mb-3">My Cohort + Subject Assignments</h2>
@@ -245,7 +245,7 @@ export default function FacilitatorDashboard() {
       )}
 
       {tab === "resumption" && (
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+      <div className="bg-surface rounded-xl border border-gray-200 shadow-sm">
         {/* Open Daily Resumption */}
         <div className="p-6">
           <h2 className="text-sm font-semibold text-gray-700 mb-3">Open Daily Resumption</h2>

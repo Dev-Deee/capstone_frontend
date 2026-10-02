@@ -238,7 +238,7 @@ export default function StudentAssignmentsSection() {
       )}
 
       {entries.length === 0 ? (
-        <div className="bg-white rounded-lg border border-gray-200 p-5">
+        <div className="bg-surface rounded-lg border border-gray-200 p-5">
           <p className="text-sm text-gray-400">No assignments found.</p>
         </div>
       ) : (
@@ -259,7 +259,7 @@ export default function StudentAssignmentsSection() {
             return (
               <div
                 key={submission.publicId}
-                className="bg-white rounded-lg border border-gray-200 p-5"
+                className="bg-surface rounded-lg border border-gray-200 p-5"
               >
                 {/* Header */}
                 <div className="flex items-start justify-between gap-3 mb-2">

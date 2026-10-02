@@ -95,7 +95,7 @@ export default function ResumptionTodaySection() {
       )}
 
       {/* Open today's resumption for a cohort that doesn't have one yet */}
-      <form onSubmit={handleOpen} className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 mb-6">
+      <form onSubmit={handleOpen} className="bg-surface rounded-xl border border-gray-200 shadow-sm p-6 mb-6">
         <h2 className="text-sm font-semibold text-gray-700 mb-3">Open daily resumption</h2>
         <div className="flex flex-wrap items-end gap-3">
           <select
@@ -121,7 +121,7 @@ export default function ResumptionTodaySection() {
         </div>
       </form>
 
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+      <div className="bg-surface rounded-xl border border-gray-200 shadow-sm p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-sm font-semibold text-gray-700">Today's Sessions</h2>
           <button onClick={loadToday} className="text-xs text-gray-400 hover:text-gray-700 underline">Refresh</button>

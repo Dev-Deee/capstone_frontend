@@ -42,7 +42,7 @@ export default function NewInstitutionPage() {
     <div className="p-6">
       <PageHeader title="Create another institution"
         description="You'll be its owner. Your place in your other institutions doesn't change, and you can switch between them any time." />
-      <form onSubmit={submit} className="max-w-lg space-y-5 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+      <form onSubmit={submit} className="max-w-lg space-y-5 rounded-xl border border-gray-200 bg-surface p-6 shadow-sm">
         <div>
           <label htmlFor="n" className="mb-1.5 block text-sm font-medium text-gray-700">Name</label>
           <input id="n" required value={name} onChange={(e) => setName(e.target.value)}

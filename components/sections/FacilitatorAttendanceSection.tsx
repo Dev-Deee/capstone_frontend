@@ -99,7 +99,7 @@ export default function FacilitatorAttendanceSection() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Column 1 — assignments */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+        <div className="bg-surface rounded-xl border border-gray-200 shadow-sm p-4">
           <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">My Assignments</h2>
           {assignments.length === 0 ? (
             <p className="text-sm text-gray-400">No assignments yet.</p>
@@ -126,7 +126,7 @@ export default function FacilitatorAttendanceSection() {
         </div>
 
         {/* Column 2 — sessions */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+        <div className="bg-surface rounded-xl border border-gray-200 shadow-sm p-4">
           <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Sessions</h2>
           {!selectedAssignment ? (
             <p className="text-sm text-gray-400">Select an assignment.</p>
@@ -159,7 +159,7 @@ export default function FacilitatorAttendanceSection() {
         </div>
 
         {/* Column 3 — roster */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 md:col-span-1">
+        <div className="bg-surface rounded-xl border border-gray-200 shadow-sm p-4 md:col-span-1">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Roster</h2>
             {roster.length > 0 && (

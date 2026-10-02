@@ -32,7 +32,7 @@ type Tier = "daily" | "class";
 
 function StatCard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 flex flex-col gap-1">
+    <div className="bg-surface rounded-xl border border-gray-200 shadow-sm p-4 flex flex-col gap-1">
       <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">{label}</span>
       <span className="text-2xl font-semibold text-gray-900">{value}</span>
       {sub && <span className="text-xs text-gray-400">{sub}</span>}
@@ -108,7 +108,7 @@ export default function StudentAttendanceSection() {
             </div>
           )}
 
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+          <div className="bg-surface rounded-xl border border-gray-200 shadow-sm p-4">
             <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Daily check-ins</h2>
             {daily.length === 0 ? (
               <p className="text-sm text-gray-400">No resumption days recorded yet.</p>
@@ -145,7 +145,7 @@ export default function StudentAttendanceSection() {
             <StatCard label="Rate" value={`${classRate}%`} sub={`${classAttended} of ${closedClasses.length} classes`} />
           </div>
 
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+          <div className="bg-surface rounded-xl border border-gray-200 shadow-sm p-4">
             <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Class sessions</h2>
             {classes.length === 0 ? (
               <p className="text-sm text-gray-400">No class sessions recorded yet.</p>

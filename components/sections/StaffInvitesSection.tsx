@@ -52,7 +52,7 @@ export default function StaffInvitesSection() {
         </div>
       )}
 
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+      <div className="bg-surface rounded-xl border border-gray-200 shadow-sm p-6">
         <form onSubmit={handleSubmit} className="space-y-3 max-w-md">
           <div className="flex gap-3">
             <input

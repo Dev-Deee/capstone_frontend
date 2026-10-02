@@ -55,7 +55,7 @@ export default function CohortDetailPage() {
                 </div>
             )}
 
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+            <div className="bg-surface rounded-xl border border-gray-200 shadow-sm p-6">
                 {cohort ? (
                     <dl className="space-y-4">
                         <div>

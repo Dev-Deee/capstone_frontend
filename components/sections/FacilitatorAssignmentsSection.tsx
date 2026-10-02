@@ -45,7 +45,7 @@ export default function FacilitatorAssignmentsSection() {
         </div>
       )}
 
-      <div className="bg-white rounded-lg border border-gray-200 p-5">
+      <div className="bg-surface rounded-lg border border-gray-200 p-5">
         <form onSubmit={handleSubmit} className="space-y-3">
           <select
             required value={facilitatorPublicId}

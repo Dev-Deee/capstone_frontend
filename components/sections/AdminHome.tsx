@@ -36,7 +36,7 @@ const QUICK_ACTIONS: Record<Variant, { href: string; label: string; hint: string
 
 function Stat({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+    <div className="rounded-xl border border-gray-200 bg-surface p-5 shadow-sm">
       <p className="text-xs font-medium uppercase tracking-[0.14em] text-gray-400">{label}</p>
       <p className="mt-3 font-display text-[40px] leading-none text-gray-900">{value}</p>
       {sub && <p className="mt-2 text-xs text-gray-500">{sub}</p>}
@@ -98,7 +98,7 @@ export default function AdminHome({ variant }: { variant: Variant }) {
 
       <div className="mt-6 grid gap-6 lg:grid-cols-5">
         {/* Today */}
-        <section className="lg:col-span-2 rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <section className="lg:col-span-2 rounded-xl border border-gray-200 bg-surface p-5 shadow-sm">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold text-gray-900">Today's resumption</h2>
             <Link href={`${attendanceHref}?tab=today`} className="text-xs text-blue-600 hover:underline">Open</Link>
@@ -125,7 +125,7 @@ export default function AdminHome({ variant }: { variant: Variant }) {
         </section>
 
         {/* Needs attention */}
-        <section className="lg:col-span-3 rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <section className="lg:col-span-3 rounded-xl border border-gray-200 bg-surface p-5 shadow-sm">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold text-gray-900">Lowest attendance</h2>
             <Link href={`${attendanceHref}?tab=overview`} className="text-xs text-blue-600 hover:underline">All cohorts</Link>
@@ -162,7 +162,7 @@ export default function AdminHome({ variant }: { variant: Variant }) {
             <Link
               key={a.href}
               href={a.href}
-              className="group rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition hover:border-blue-300 hover:shadow"
+              className="group rounded-xl border border-gray-200 bg-surface p-4 shadow-sm transition hover:border-blue-300 hover:shadow"
             >
               <p className="flex items-center justify-between text-sm font-medium text-gray-900">
                 {a.label}

@@ -14,7 +14,7 @@ const ROLE_LABEL: Record<string, string> = {
 };
 
 const input =
-  "w-full h-11 px-3.5 rounded-lg border border-gray-300 bg-white text-[15px] text-gray-900 placeholder:text-gray-400 " +
+  "w-full h-11 px-3.5 rounded-lg border border-gray-300 bg-surface text-[15px] text-gray-900 placeholder:text-gray-400 " +
   "transition-colors focus:outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/15";
 
 function AcceptInviteContent() {
@@ -133,7 +133,7 @@ function AcceptInviteContent() {
 
 export default function AcceptInvitePage() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-surface">
       <header className="mx-auto flex h-16 max-w-6xl items-center px-6"><Logo /></header>
       <main className="mx-auto max-w-md px-6 pb-24 pt-10 rise-in">
         <Suspense fallback={<p className="text-sm text-gray-400">Loading…</p>}>

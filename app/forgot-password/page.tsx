@@ -24,7 +24,7 @@ export default function ForgotPasswordPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="w-full max-w-sm bg-white p-8 rounded-lg shadow-sm border border-gray-200">
+      <div className="w-full max-w-sm bg-surface p-8 rounded-lg shadow-sm border border-gray-200">
         {submitted ? (
           <>
             <p className="text-gray-900 font-medium">Check your email</p>

@@ -27,7 +27,7 @@ export default function PlatformPage() {
       <PageHeader eyebrow="Platform" title="All institutions"
         description="Every institution on Cadence. Entering one you don't belong to gives you owner access there, and is recorded in the audit log." />
       {error && <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3.5 py-3 text-sm text-red-800">{error}</div>}
-      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+      <div className="overflow-hidden rounded-xl border border-gray-200 bg-surface shadow-sm">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-100 text-left text-xs text-gray-400">

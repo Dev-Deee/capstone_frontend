@@ -396,6 +396,22 @@ export const resumptionApi = {
 };
 
 // --- Admin Attendance Reporting ---
+// Analytics dashboard — over the cohorts the caller may see (VIEW_INSTITUTION_ANALYTICS).
+export interface InstitutionAnalytics {
+  days: number;
+  cohortCount: number;
+  studentCount: number;
+  resumptionRatePercent: number | null;
+  classRatePercent: number | null;
+  today: { expected: number; present: number; late: number; pendingBiometric: number; openSessions: number };
+  split: { present: number; late: number; absent: number; pendingBiometric: number };
+  trend: Array<{ date: string; resumptionRatePercent: number | null; classRatePercent: number | null }>;
+}
+
+export const analyticsApi = {
+  get: (days: number) => request<InstitutionAnalytics>(`/api/admin/analytics?days=${days}`),
+};
+
 export const adminAttendanceApi = {
   getAllCohorts: () => request<Array<{
     cohortPublicId: string; cohortName: string; studentCount: number; averageRatePercent: number;

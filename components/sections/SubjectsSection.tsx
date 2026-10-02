@@ -61,7 +61,7 @@ export default function SubjectsSection() {
             </div>
         )}
 
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+        <div className="bg-surface rounded-xl border border-gray-200 shadow-sm">
           <div className="p-6 border-b border-gray-100">
             <h2 className="text-sm font-semibold text-gray-700 mb-4">Create Subject</h2>
             <form onSubmit={handleSubmit} className="space-y-3 max-w-md">

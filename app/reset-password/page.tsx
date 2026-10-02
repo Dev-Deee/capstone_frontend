@@ -51,7 +51,7 @@ function ResetPasswordForm() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="w-full max-w-sm bg-white p-8 rounded-lg shadow-sm border border-gray-200">
+      <div className="w-full max-w-sm bg-surface p-8 rounded-lg shadow-sm border border-gray-200">
         <h1 className="text-xl font-semibold text-gray-900 mb-1">Set a new password</h1>
 
         {!token ? (

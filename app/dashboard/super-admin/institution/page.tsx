@@ -19,7 +19,7 @@ export default function InstitutionPage() {
     <div className="p-6">
       <PageHeader title="Institution" description="The organisation this workspace belongs to." />
 
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+      <div className="bg-surface rounded-xl border border-gray-200 shadow-sm p-6">
         {loadError ? (
           <p className="text-sm rounded-lg px-3 py-2 border bg-red-50 text-red-700 border-red-100">
             Failed to load institution details.

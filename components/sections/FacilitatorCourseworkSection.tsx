@@ -234,7 +234,7 @@ export default function FacilitatorCourseworkSection() {
 
         {/* Create Assignment */}
         {subTab === "create" && (
-        <div className="bg-white rounded-lg border border-gray-200 p-5">
+        <div className="bg-surface rounded-lg border border-gray-200 p-5">
           <h2 className="text-sm font-semibold text-gray-700 mb-4">Create Assignment</h2>
           {myCohortRows.length === 0 ? (
               <p className="text-sm text-gray-400">You are not assigned to any cohort/subject yet.</p>
@@ -332,7 +332,7 @@ export default function FacilitatorCourseworkSection() {
 
         {/* My Assignments */}
         {subTab === "list" && (
-        <div className="bg-white rounded-lg border border-gray-200 p-5">
+        <div className="bg-surface rounded-lg border border-gray-200 p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-semibold text-gray-700">My Assignments</h2>
             {uniqueCohorts.length > 1 && (
@@ -433,7 +433,7 @@ export default function FacilitatorCourseworkSection() {
 
         {/* Extension Requests */}
         {subTab === "extensions" && (
-        <div className="bg-white rounded-lg border border-gray-200 p-5">
+        <div className="bg-surface rounded-lg border border-gray-200 p-5">
           <h2 className="text-sm font-semibold text-gray-700 mb-4">Pending Extension Requests</h2>
           {pendingExtensions.length === 0 ? (
               <p className="text-sm text-gray-400">No pending extension requests.</p>

@@ -56,7 +56,7 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-10">
-      <div className="w-full max-w-sm bg-white p-8 rounded-lg shadow-sm border border-gray-200">
+      <div className="w-full max-w-sm bg-surface p-8 rounded-lg shadow-sm border border-gray-200">
         <h1 className="text-xl font-semibold text-gray-900 mb-1">Create your account</h1>
         <p className="text-sm text-gray-500 mb-6">
           Enter the invite code your facilitator or admin shared with you.

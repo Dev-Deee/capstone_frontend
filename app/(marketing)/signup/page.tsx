@@ -13,7 +13,7 @@ type SlugState =
   | { kind: "bad"; reason: string; suggestion: string | null };
 
 const input =
-  "w-full h-11 px-3.5 rounded-lg border border-gray-300 bg-white text-[15px] text-gray-900 placeholder:text-gray-400 " +
+  "w-full h-11 px-3.5 rounded-lg border border-gray-300 bg-surface text-[15px] text-gray-900 placeholder:text-gray-400 " +
   "transition-colors focus:outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/15";
 
 export default function SignupPage() {
@@ -124,7 +124,7 @@ export default function SignupPage() {
               <span className="flex items-center bg-gray-50 px-3 text-[15px] text-gray-500 border-r border-gray-200">cadence /</span>
               <input id="inst-slug" required value={slug}
                 onChange={(e) => { setSlug(e.target.value.toLowerCase()); setSlugEdited(true); }}
-                className="h-11 flex-1 bg-white px-3 font-mono text-[15px] text-gray-900 focus:outline-none" />
+                className="h-11 flex-1 bg-surface px-3 font-mono text-[15px] text-gray-900 focus:outline-none" />
             </div>
             <p className="mt-1.5 text-sm" aria-live="polite">{slugHint}</p>
           </div>

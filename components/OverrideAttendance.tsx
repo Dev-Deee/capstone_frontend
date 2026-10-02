@@ -50,7 +50,7 @@ export default function OverrideAttendance({
             type="button"
             onClick={() => setStatus(s)}
             className={`flex-1 rounded-md px-2 py-1 text-xs font-medium border ${
-              status === s ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-600 border-gray-200"
+              status === s ? "bg-blue-600 text-white border-blue-600" : "bg-surface text-gray-600 border-gray-200"
             }`}
           >
             {s[0] + s.slice(1).toLowerCase()}
@@ -62,7 +62,7 @@ export default function OverrideAttendance({
         value={reason}
         onChange={(e) => setReason(e.target.value)}
         placeholder="Reason (recorded in the audit log)"
-        className="w-full rounded-md border border-gray-200 bg-white px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="w-full rounded-md border border-gray-200 bg-surface px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
       />
       {error && <p className="text-xs text-red-600">{error}</p>}
       <div className="flex justify-end gap-2">

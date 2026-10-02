@@ -144,7 +144,7 @@ export default function StudentInvitesSection() {
         </div>
       )}
 
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+      <div className="bg-surface rounded-xl border border-gray-200 shadow-sm">
         {/* Cohort + generate */}
         <form onSubmit={handleGenerate} className="p-5 border-b border-gray-100 space-y-3">
           <select
