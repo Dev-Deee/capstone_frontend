@@ -25,6 +25,7 @@ const NAV_BY_ROLE: Record<string, NavItem[]> = {
   FACILITATOR: [
     { href: "/dashboard/facilitator", label: "Overview", icon: "home" },
     { href: "/dashboard/facilitator/classes", label: "My Classes", icon: "classes" },
+    { href: "/dashboard/facilitator/analytics", label: "Analytics", icon: "chart" },
     { href: "/dashboard/facilitator/profile", label: "Account Settings", icon: "settings" },
   ],
   ADMIN: [
