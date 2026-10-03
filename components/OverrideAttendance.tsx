@@ -8,11 +8,16 @@ import { useState } from "react";
 export default function OverrideAttendance({
   current,
   onSave,
+  startOpen = false,
+  onCancel,
 }: {
   current: string;
   onSave: (status: string, reason: string) => Promise<void>;
+  // startOpen + onCancel: the parent shows/hides the form itself.
+  startOpen?: boolean;
+  onCancel?: () => void;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(startOpen);
   const [status, setStatus] = useState(current === "ABSENT" || current === "PENDING_BIOMETRIC" ? "PRESENT" : current);
   const [reason, setReason] = useState("");
   const [saving, setSaving] = useState(false);
@@ -66,7 +71,7 @@ export default function OverrideAttendance({
       />
       {error && <p className="text-xs text-red-600">{error}</p>}
       <div className="flex justify-end gap-2">
-        <button type="button" onClick={() => setOpen(false)} className="text-xs text-gray-500 hover:underline">
+        <button type="button" onClick={() => (onCancel ? onCancel() : setOpen(false))} className="text-xs text-gray-500 hover:underline">
           Cancel
         </button>
         <button

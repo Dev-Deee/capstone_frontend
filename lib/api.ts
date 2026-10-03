@@ -446,6 +446,27 @@ export const assignmentApi = {
     request<any[]>(`/api/assignments/cohort/${cohortPublicId}`),
   getOne: (publicId: string) =>
     request<any>(`/api/assignments/${publicId}`),
+  // Publish later: an ISO local date-time, or null to clear the schedule.
+  schedule: (publicId: string, publishAt: string | null) =>
+    request<any>(`/api/assignments/${publicId}/schedule`, { method: "PATCH", body: JSON.stringify({ publishAt }) }),
+  attach: async (publicId: string, file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const token = getAccessToken();
+    const res = await fetch(`${API_BASE}/api/assignments/${publicId}/attachment`, {
+      method: "POST",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    });
+    if (!res.ok) {
+      let message = res.status === 413 ? "That file is too large (5 MB max)" : "Upload failed";
+      try { message = (await res.json()).message || message; } catch {}
+      throw new Error(message);
+    }
+    return res.json();
+  },
+  removeAttachment: (publicId: string) =>
+    request<any>(`/api/assignments/${publicId}/attachment`, { method: "DELETE" }),
 };
 
 // --- Submissions ---
