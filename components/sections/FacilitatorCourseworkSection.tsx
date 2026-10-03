@@ -6,6 +6,7 @@ import Avatar from "@/components/ui/Avatar";
 import ListToolbar from "@/components/ui/ListToolbar";
 import RowMenu, { type MenuItem } from "@/components/ui/RowMenu";
 import { Table, Td, Th, Tr } from "@/components/ui/Table";
+import CollapsibleGroup, { initialOpen } from "@/components/ui/CollapsibleGroup";
 
 type StatusFilter = "ALL" | "DRAFT" | "SCHEDULED" | "OPEN" | "CLOSED";
 type PublishChoice = "draft" | "now" | "later";
@@ -77,7 +78,9 @@ export default function FacilitatorCourseworkSection() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [status, setStatus] = useState<StatusFilter>("ALL");
-  const [cohortFilter, setCohortFilter] = useState("ALL");
+  const [openGroups, setOpenGroups] = useState<Set<string> | null>(null);
+  // Review groups start open (they need action); this tracks the ones closed.
+  const [closedReviews, setClosedReviews] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
   const [panel, setPanel] = useState<Panel>(null);
   const [panelFile, setPanelFile] = useState<File | null>(null);
@@ -128,7 +131,6 @@ export default function FacilitatorCourseworkSection() {
     .sort((a, b) => new Date(b.deadline).getTime() - new Date(a.deadline).getTime()), [cohortAssignments]);
   const q = search.trim().toLowerCase();
   const matching = all.filter((a) =>
-    (cohortFilter === "ALL" || a.cohortPublicId === cohortFilter) &&
     (!q || [a.title, a.description, subjectsById[a.subjectPublicId]].some((v) => v?.toLowerCase().includes(q))));
   const inStatus = (a: any, f: StatusFilter) =>
     f === "ALL" ? true
@@ -137,6 +139,18 @@ export default function FacilitatorCourseworkSection() {
       : f === "DRAFT" ? a.status === "DRAFT" && !a.publishAt
       : a.status === f;
   const visible = matching.filter((a) => inStatus(a, status));
+
+  // One collapsible group per cohort taught (in the order the facilitator's
+  // classes come back), each listing that cohort's assignments.
+  const cohortKeys = uniqueCohorts.map((r) => r.cohortPublicId as string);
+  const openSet = openGroups ?? initialOpen(cohortKeys);
+  const isGroupOpen = (key: string) => Boolean(q) || openSet.has(key);
+  const allOpen = cohortKeys.length > 0 && cohortKeys.every((k) => openSet.has(k));
+  const toggleGroup = (key: string) => {
+    const next = new Set(openSet);
+    if (next.has(key)) next.delete(key); else next.add(key);
+    setOpenGroups(next);
+  };
 
   // Create the draft, then (optionally) attach the file, then publish now,
   // schedule, or leave it as a draft. If a later step fails the draft is kept
@@ -169,6 +183,7 @@ export default function FacilitatorCourseworkSection() {
       setPublishChoice("draft"); setPublishAt("");
       setCreating(false);
       setStatus("ALL");
+      setOpenGroups((prev) => new Set(prev ?? initialOpen(cohortKeys)).add(created.cohortPublicId ?? selectedCohort));
     } catch (err) {
       const why = err instanceof Error ? err.message : "Something went wrong";
       setMessage({
@@ -266,18 +281,33 @@ export default function FacilitatorCourseworkSection() {
         </div>
       )}
 
-      {/* Extension requests waiting on this facilitator */}
+      {/* Extension requests waiting on this facilitator, per cohort */}
       {pendingExtensions.length > 0 && (
-        <section className="rounded-2xl border border-amber-200 bg-surface shadow-sm">
-          <div className="flex items-center gap-2 border-b border-gray-100 px-4 py-3">
+        <div className="space-y-3">
+          <h2 className="flex items-center gap-2 text-sm font-semibold text-gray-900">
             <span className="h-2 w-2 rounded-full bg-amber-500" />
-            <h2 className="text-sm font-semibold text-gray-900">Needs your review</h2>
-            <span className="text-sm text-gray-400">
+            Needs your review
+            <span className="font-normal text-gray-400">
               {pendingExtensions.length} extension request{pendingExtensions.length === 1 ? "" : "s"}
             </span>
-          </div>
-          <ul className="divide-y divide-gray-100">
-            {pendingExtensions.map((ext: any) => (
+          </h2>
+          {Array.from(new Set(pendingExtensions.map((e: any) => e.cohortPublicId as string))).map((cohortId) => {
+            const list = pendingExtensions.filter((e: any) => e.cohortPublicId === cohortId);
+            const key = "review:" + cohortId;
+            return (
+              <CollapsibleGroup
+                key={key}
+                title={cohortsById[cohortId] ?? "Cohort"}
+                meta={`${list.length} request${list.length === 1 ? "" : "s"}`}
+                open={!closedReviews.has(key)}
+                onToggle={() => setClosedReviews((prev) => {
+                  const next = new Set(prev);
+                  if (next.has(key)) next.delete(key); else next.add(key);
+                  return next;
+                })}
+              >
+                <ul className="divide-y divide-gray-100">
+            {list.map((ext: any) => (
               <li key={ext.publicId} className="px-4 py-3">
                 <div className="flex flex-wrap items-start gap-3">
                   <Avatar name={ext.studentName} size={32} />
@@ -318,8 +348,11 @@ export default function FacilitatorCourseworkSection() {
                 )}
               </li>
             ))}
-          </ul>
-        </section>
+                </ul>
+              </CollapsibleGroup>
+            );
+          })}
+        </div>
       )}
 
       {/* All assignments */}
@@ -340,14 +373,11 @@ export default function FacilitatorCourseworkSection() {
           onSearch={setSearch}
           searchPlaceholder="Title or subject…"
         >
-          {uniqueCohorts.length > 1 && (
-            <select value={cohortFilter} onChange={(e) => setCohortFilter(e.target.value)}
-              aria-label="Cohort" className="rounded-lg border border-gray-200 bg-surface px-2.5 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
-              <option value="ALL">All cohorts</option>
-              {uniqueCohorts.map((r) => (
-                <option key={r.cohortPublicId} value={r.cohortPublicId}>{cohortsById[r.cohortPublicId] ?? r.cohortPublicId}</option>
-              ))}
-            </select>
+          {cohortKeys.length > 1 && !q && (
+            <button type="button" onClick={() => setOpenGroups(allOpen ? new Set() : new Set(cohortKeys))}
+              className="rounded-lg px-2.5 py-1.5 text-sm text-blue-600 hover:bg-blue-50">
+              {allOpen ? "Collapse all" : "Expand all"}
+            </button>
           )}
           {myCohortRows.length > 0 && (
             <button type="button" onClick={() => setCreating((c) => !c)}
@@ -427,88 +457,102 @@ export default function FacilitatorCourseworkSection() {
           <p className="p-6 text-sm text-gray-400">No assignments yet — start with “New assignment”.</p>
         ) : visible.length === 0 ? (
           <p className="p-6 text-sm text-gray-400">No assignments match.</p>
-        ) : (
-          <Table>
-            <thead>
-              <tr>
-                <Th>Assignment</Th>
-                <Th className="hidden xl:table-cell">Cohort · Subject</Th>
-                <Th>Due</Th>
-                <Th>Status</Th>
-                <Th align="right"><span className="sr-only">Actions</span></Th>
-              </tr>
-            </thead>
-            <tbody>
-              {visible.map((a) => (
-                <Fragment key={a.publicId}>
-                  <Tr muted={a.status === "CLOSED"}>
-                    <Td className="max-w-[22rem]">
-                      <p className="truncate font-medium text-gray-900">{a.title}</p>
-                      <p className="truncate text-xs text-gray-400">{a.description}</p>
-                      {a.attachmentUrl && (
-                        <a href={a.attachmentUrl} target="_blank" rel="noopener noreferrer"
-                          className="mt-1 inline-flex max-w-full items-center gap-1 text-xs text-blue-600 hover:underline">
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m21 11-8.6 8.6a5 5 0 0 1-7-7l8.6-8.6a3.3 3.3 0 0 1 4.7 4.7l-8.6 8.6a1.7 1.7 0 0 1-2.4-2.4l7.9-7.9" /></svg>
-                          <span className="truncate">{a.attachmentName ?? "Attachment"}</span>
-                        </a>
-                      )}
-                    </Td>
-                    <Td className="hidden xl:table-cell text-gray-600">
-                      <p className="whitespace-nowrap">{cohortsById[a.cohortPublicId] ?? "—"}</p>
-                      <p className="text-xs text-gray-400">{subjectsById[a.subjectPublicId] ?? ""}</p>
-                    </Td>
-                    <Td><Due deadline={a.deadline} closed={a.status === "CLOSED"} /></Td>
-                    <Td>
-                      <StatusPill status={isScheduled(a) ? "SCHEDULED" : a.status} />
-                      {isScheduled(a) && <p className="mt-1 whitespace-nowrap text-xs text-gray-400">{fmtWhen(a.publishAt)}</p>}
-                    </Td>
-                    <Td align="right"><RowMenu items={menuFor(a)} label={`Actions for ${a.title}`} /></Td>
-                  </Tr>
-                  {panel && panel.id === a.publicId && (
-                    <tr>
-                      <td colSpan={5} className="px-4 pb-4">
-                        <div className={`flex flex-wrap items-center gap-3 rounded-xl border p-3 ${
-                          panel.kind === "close" || panel.kind === "removeFile" ? "border-red-100 bg-red-50" : "border-gray-200 bg-gray-50"
-                        }`}>
-                          <p className={`text-sm ${panel.kind === "close" || panel.kind === "removeFile" ? "text-red-700" : "text-gray-700"}`}>
-                            {panel.kind === "publish" && "Publish now? Students in the cohort see it straight away."}
-                            {panel.kind === "close" && "Close early? No more submissions will be accepted."}
-                            {panel.kind === "schedule" && "Publish on its own at:"}
-                            {panel.kind === "attach" && (a.attachmentUrl ? "Replace the file with:" : "Attach a file (5 MB max):")}
-                            {panel.kind === "removeFile" && `Remove ${a.attachmentName ?? "the file"}? Students won't see it any more.`}
-                          </p>
-                          {panel.kind === "schedule" && (
-                            <input type="datetime-local" value={panelWhen} onChange={(e) => setPanelWhen(e.target.value)}
-                              className="rounded-lg border border-gray-200 bg-surface px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                          )}
-                          {panel.kind === "attach" && (
-                            <input type="file" onChange={(e) => setPanelFile(e.target.files?.[0] ?? null)}
-                              className="text-sm text-gray-600 file:mr-3 file:rounded-md file:border-0 file:bg-surface file:px-3 file:py-1.5 file:text-xs file:font-medium file:ring-1 file:ring-gray-200" />
-                          )}
-                          <div className="ml-auto flex items-center gap-3">
-                            {panel.kind === "schedule" && a.publishAt && (
-                              <button onClick={() => runPanel(true)} disabled={isActionWorking} className="text-sm text-gray-600 hover:underline">
-                                Cancel schedule
-                              </button>
-                            )}
-                            <button onClick={() => runPanel()} disabled={isActionWorking || (panel.kind === "attach" && !panelFile)}
-                              className={`rounded-lg px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50 ${
-                                panel.kind === "close" || panel.kind === "removeFile" ? "bg-red-600 hover:bg-red-700" : "bg-blue-600 hover:bg-blue-700"
-                              }`}>
-                              {isActionWorking ? "Working…" : { publish: "Publish", close: "Close early", schedule: "Save schedule", attach: "Upload", removeFile: "Remove" }[panel.kind]}
-                            </button>
-                            <button onClick={() => setPanel(null)} className="text-sm text-gray-500 hover:text-gray-900">Cancel</button>
-                          </div>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                </Fragment>
-              ))}
-            </tbody>
-          </Table>
-        )}
+        ) : null}
       </section>
+
+      {visible.length > 0 && cohortKeys.map((cohortId) => {
+        const list = visible.filter((a) => a.cohortPublicId === cohortId);
+        if (list.length === 0) return null;
+        const openCount = list.filter((a) => isOpen(a.status)).length;
+        const drafts = list.filter((a) => a.status === "DRAFT" && !a.publishAt).length;
+        const scheduled = list.filter(isScheduled).length;
+        return (
+          <CollapsibleGroup
+            key={cohortId}
+            title={cohortsById[cohortId] ?? "Cohort"}
+            meta={`${list.length} assignment${list.length === 1 ? "" : "s"}${openCount ? ` · ${openCount} open` : ""}${scheduled ? ` · ${scheduled} scheduled` : ""}${drafts ? ` · ${drafts} draft${drafts === 1 ? "" : "s"}` : ""}`}
+            open={isGroupOpen(cohortId)}
+            onToggle={() => toggleGroup(cohortId)}
+          >
+              <Table>
+                <thead>
+                  <tr>
+                    <Th>Assignment</Th>
+                    <Th className="hidden xl:table-cell">Subject</Th>
+                    <Th>Due</Th>
+                    <Th>Status</Th>
+                    <Th align="right"><span className="sr-only">Actions</span></Th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {list.map((a) => (
+                    <Fragment key={a.publicId}>
+                      <Tr muted={a.status === "CLOSED"}>
+                        <Td className="max-w-[22rem]">
+                          <p className="truncate font-medium text-gray-900">{a.title}</p>
+                          <p className="truncate text-xs text-gray-400">{a.description}</p>
+                          {a.attachmentUrl && (
+                            <a href={a.attachmentUrl} target="_blank" rel="noopener noreferrer"
+                              className="mt-1 inline-flex max-w-full items-center gap-1 text-xs text-blue-600 hover:underline">
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m21 11-8.6 8.6a5 5 0 0 1-7-7l8.6-8.6a3.3 3.3 0 0 1 4.7 4.7l-8.6 8.6a1.7 1.7 0 0 1-2.4-2.4l7.9-7.9" /></svg>
+                              <span className="truncate">{a.attachmentName ?? "Attachment"}</span>
+                            </a>
+                          )}
+                        </Td>
+                        <Td className="hidden xl:table-cell whitespace-nowrap text-gray-600">{subjectsById[a.subjectPublicId] ?? "—"}</Td>
+                        <Td><Due deadline={a.deadline} closed={a.status === "CLOSED"} /></Td>
+                        <Td>
+                          <StatusPill status={isScheduled(a) ? "SCHEDULED" : a.status} />
+                          {isScheduled(a) && <p className="mt-1 whitespace-nowrap text-xs text-gray-400">{fmtWhen(a.publishAt)}</p>}
+                        </Td>
+                        <Td align="right"><RowMenu items={menuFor(a)} label={`Actions for ${a.title}`} /></Td>
+                      </Tr>
+                      {panel && panel.id === a.publicId && (
+                        <tr>
+                          <td colSpan={5} className="px-4 pb-4">
+                            <div className={`flex flex-wrap items-center gap-3 rounded-xl border p-3 ${
+                              panel.kind === "close" || panel.kind === "removeFile" ? "border-red-100 bg-red-50" : "border-gray-200 bg-gray-50"
+                            }`}>
+                              <p className={`text-sm ${panel.kind === "close" || panel.kind === "removeFile" ? "text-red-700" : "text-gray-700"}`}>
+                                {panel.kind === "publish" && "Publish now? Students in the cohort see it straight away."}
+                                {panel.kind === "close" && "Close early? No more submissions will be accepted."}
+                                {panel.kind === "schedule" && "Publish on its own at:"}
+                                {panel.kind === "attach" && (a.attachmentUrl ? "Replace the file with:" : "Attach a file (5 MB max):")}
+                                {panel.kind === "removeFile" && `Remove ${a.attachmentName ?? "the file"}? Students won't see it any more.`}
+                              </p>
+                              {panel.kind === "schedule" && (
+                                <input type="datetime-local" value={panelWhen} onChange={(e) => setPanelWhen(e.target.value)}
+                                  className="rounded-lg border border-gray-200 bg-surface px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                              )}
+                              {panel.kind === "attach" && (
+                                <input type="file" onChange={(e) => setPanelFile(e.target.files?.[0] ?? null)}
+                                  className="text-sm text-gray-600 file:mr-3 file:rounded-md file:border-0 file:bg-surface file:px-3 file:py-1.5 file:text-xs file:font-medium file:ring-1 file:ring-gray-200" />
+                              )}
+                              <div className="ml-auto flex items-center gap-3">
+                                {panel.kind === "schedule" && a.publishAt && (
+                                  <button onClick={() => runPanel(true)} disabled={isActionWorking} className="text-sm text-gray-600 hover:underline">
+                                    Cancel schedule
+                                  </button>
+                                )}
+                                <button onClick={() => runPanel()} disabled={isActionWorking || (panel.kind === "attach" && !panelFile)}
+                                  className={`rounded-lg px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50 ${
+                                    panel.kind === "close" || panel.kind === "removeFile" ? "bg-red-600 hover:bg-red-700" : "bg-blue-600 hover:bg-blue-700"
+                                  }`}>
+                                  {isActionWorking ? "Working…" : { publish: "Publish", close: "Close early", schedule: "Save schedule", attach: "Upload", removeFile: "Remove" }[panel.kind]}
+                                </button>
+                                <button onClick={() => setPanel(null)} className="text-sm text-gray-500 hover:text-gray-900">Cancel</button>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
+                  ))}
+                </tbody>
+              </Table>
+          </CollapsibleGroup>
+        );
+      })}
     </div>
   );
 }

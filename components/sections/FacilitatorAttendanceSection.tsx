@@ -7,6 +7,7 @@ import OverrideAttendance from "@/components/OverrideAttendance";
 import Avatar from "@/components/ui/Avatar";
 import ListToolbar from "@/components/ui/ListToolbar";
 import { Table, Td, Th, Tr } from "@/components/ui/Table";
+import CollapsibleGroup, { initialOpen } from "@/components/ui/CollapsibleGroup";
 
 type RosterFilter = "ALL" | "PRESENT" | "ABSENT" | "PENDING";
 
@@ -38,8 +39,12 @@ export default function FacilitatorAttendanceSection() {
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   const [selectedClass, setSelectedClass] = useState<any>(null);
-  const [sessions, setSessions] = useState<any[]>([]);
-  const [loadingSessions, setLoadingSessions] = useState(false);
+  // Sessions per class (cohort × subject), loaded when its cohort is opened.
+  // A key with an undefined value means "loading".
+  const [sessionsByClass, setSessionsByClass] = useState<Record<string, any[] | undefined>>({});
+  const [openGroups, setOpenGroups] = useState<Set<string> | null>(null);
+  // Classes showing their full session history rather than the latest few.
+  const [showAll, setShowAll] = useState<Set<string>>(new Set());
 
   const [selectedSession, setSelectedSession] = useState<any>(null);
   const [roster, setRoster] = useState<any[]>([]);
@@ -56,34 +61,42 @@ export default function FacilitatorAttendanceSection() {
         setClasses(mine);
         setCohorts(Object.fromEntries(cohortList.map((c: any) => [c.publicId, c.name])));
         setSubjects(Object.fromEntries(subjectList.map((s: any) => [s.publicId, s.name])));
-        if (mine.length > 0) selectClass(mine[0]);
       })
       .catch((err) => setMessage({ type: "error", text: err.message }))
       .finally(() => setIsLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const cohortIds = Array.from(new Set(classes.map((c) => c.cohortPublicId as string)));
+  const openSet = openGroups ?? initialOpen(cohortIds);
+  const allOpen = cohortIds.length > 0 && cohortIds.every((id) => openSet.has(id));
+  const toggleGroup = (id: string) => {
+    const next = new Set(openSet);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    setOpenGroups(next);
+  };
+
   async function loadSessions(c: any) {
-    setLoadingSessions(true);
+    setSessionsByClass((prev) => ({ ...prev, [c.publicId]: undefined }));
     try {
-      setSessions(await sessionApi.list(c.cohortPublicId, c.subjectPublicId));
+      const list = await sessionApi.list(c.cohortPublicId, c.subjectPublicId);
+      setSessionsByClass((prev) => ({ ...prev, [c.publicId]: list }));
     } catch (err) {
+      setSessionsByClass((prev) => ({ ...prev, [c.publicId]: [] }));
       setMessage({ type: "error", text: err instanceof Error ? err.message : "Failed to load sessions" });
-    } finally {
-      setLoadingSessions(false);
     }
   }
 
-  function selectClass(c: any) {
-    setSelectedClass(c);
-    setSelectedSession(null);
-    setRoster([]);
-    setSessions([]);
-    setMessage(null);
-    loadSessions(c);
-  }
+  // Load the sessions of every class in an open cohort, once.
+  useEffect(() => {
+    classes
+      .filter((c) => openSet.has(c.cohortPublicId) && !(c.publicId in sessionsByClass))
+      .forEach(loadSessions);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [classes, openGroups, sessionsByClass]);
 
-  async function openSession(s: any) {
+  async function openSession(s: any, c: any) {
+    setSelectedClass(c);
     setSelectedSession(s);
     setRoster([]);
     setRosterFilter("ALL");
@@ -103,6 +116,60 @@ export default function FacilitatorAttendanceSection() {
   function backToSessions() {
     setSelectedSession(null);
     if (selectedClass) loadSessions(selectedClass); // counts may have changed via overrides
+  }
+
+  function sessionsTable(c: any) {
+    const sessions = sessionsByClass[c.publicId];
+    if (!sessions) return <p className="p-4 text-sm text-gray-400 animate-pulse">Loading…</p>;
+    if (sessions.length === 0) return <p className="p-4 text-sm text-gray-400">No sessions yet — open one from your Overview when class starts.</p>;
+    const RECENT = 8;
+    const shown = showAll.has(c.publicId) ? sessions : sessions.slice(0, RECENT);
+    return (
+      <>
+      <Table>
+        <thead>
+          <tr>
+            <Th>Session</Th>
+            <Th className="hidden sm:table-cell">Time</Th>
+            <Th>Attendance</Th>
+            <Th>Status</Th>
+          </tr>
+        </thead>
+        <tbody>
+          {shown.map((s) => (
+            <Tr key={s.publicId} onOpen={() => openSession(s, c)}>
+              <Td className="whitespace-nowrap font-medium text-gray-900">{fmtDay(s.openedAt ?? s.expiresAt)}</Td>
+              <Td className="hidden sm:table-cell whitespace-nowrap text-gray-500">
+                {fmtTime(s.openedAt)} – {fmtTime(s.closedAt ?? s.expiresAt)}
+              </Td>
+              <Td>
+                <RateBar attended={s.attendedCount ?? 0} enrolled={s.enrolledCount ?? 0} />
+                {s.pendingBiometricCount > 0 && (
+                  <p className="mt-1 text-xs text-orange-600">{s.pendingBiometricCount} awaiting biometric</p>
+                )}
+              </Td>
+              <Td>
+                {s.isOpen ? (
+                  <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-green-100 px-2 py-0.5 text-[11px] font-medium text-green-700">
+                    <span className="h-1.5 w-1.5 rounded-full bg-green-500" /> Open now
+                  </span>
+                ) : (
+                  <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-500">Closed</span>
+                )}
+              </Td>
+            </Tr>
+          ))}
+        </tbody>
+      </Table>
+      {sessions.length > RECENT && (
+        <button type="button"
+          onClick={() => setShowAll((prev) => { const next = new Set(prev); if (next.has(c.publicId)) next.delete(c.publicId); else next.add(c.publicId); return next; })}
+          className="block w-full border-t border-gray-100 px-4 py-2.5 text-left text-xs font-medium text-blue-600 hover:bg-gray-50">
+          {showAll.has(c.publicId) ? "Show recent only" : `Show all ${sessions.length} sessions`}
+        </button>
+      )}
+      </>
+    );
   }
 
   async function override(studentPublicId: string, status: string, reason: string) {
@@ -146,72 +213,54 @@ export default function FacilitatorAttendanceSection() {
         </div>
       )}
 
-      {/* Class picker */}
-      {classes.length > 1 && (
-        <div className="flex flex-wrap gap-2" role="tablist" aria-label="Class">
-          {classes.map((c) => {
-            const active = selectedClass?.publicId === c.publicId;
-            return (
-              <button key={c.publicId} role="tab" aria-selected={active} onClick={() => selectClass(c)}
-                className={`rounded-full border px-3.5 py-1.5 text-sm transition-colors ${
-                  active ? "border-blue-600 bg-blue-600 text-white" : "border-gray-200 bg-surface text-gray-600 hover:border-gray-300 hover:text-gray-900"
-                }`}>
-                {classLabel(c)}
+      {!selectedSession ? (
+        /* Sessions, per cohort */
+        <div className="space-y-4">
+          {cohortIds.length > 1 && (
+            <div className="flex justify-end">
+              <button type="button" onClick={() => setOpenGroups(allOpen ? new Set() : new Set(cohortIds))}
+                className="rounded-lg px-2.5 py-1.5 text-sm text-blue-600 hover:bg-blue-50">
+                {allOpen ? "Collapse all" : "Expand all"}
               </button>
+            </div>
+          )}
+          {cohortIds.map((cohortId) => {
+            const cohortClasses = classes.filter((c) => c.cohortPublicId === cohortId);
+            const loaded = cohortClasses.map((c) => sessionsByClass[c.publicId]).filter(Boolean) as any[][];
+            const all = loaded.flat();
+            const enrolled = all.reduce((n, s) => n + (s.enrolledCount ?? 0), 0);
+            const attendedTotal = all.reduce((n, s) => n + (s.attendedCount ?? 0), 0);
+            const rate = enrolled ? Math.round((attendedTotal / enrolled) * 100) : null;
+            const live = all.some((s) => s.isOpen);
+            return (
+              <CollapsibleGroup
+                key={cohortId}
+                title={cohorts[cohortId] ?? "Cohort"}
+                meta={loaded.length === cohortClasses.length
+                  ? `${all.length} session${all.length === 1 ? "" : "s"}${rate != null ? ` · ${rate}% attendance` : ""}`
+                  : `${cohortClasses.length} subject${cohortClasses.length === 1 ? "" : "s"}`}
+                open={openSet.has(cohortId)}
+                onToggle={() => toggleGroup(cohortId)}
+                actions={live ? (
+                  <span className="inline-flex items-center gap-1.5 text-xs font-medium text-green-600">
+                    <span className="h-1.5 w-1.5 rounded-full bg-green-500" /> Live
+                  </span>
+                ) : undefined}
+              >
+                {cohortClasses.map((c) => (
+                  <div key={c.publicId}>
+                    {cohortClasses.length > 1 && (
+                      <p className="border-b border-gray-100 bg-gray-50 px-4 py-2 text-xs font-medium text-gray-500">
+                        {subjects[c.subjectPublicId] ?? "Subject"}
+                      </p>
+                    )}
+                    {sessionsTable(c)}
+                  </div>
+                ))}
+              </CollapsibleGroup>
             );
           })}
         </div>
-      )}
-
-      {!selectedSession ? (
-        /* Sessions for the class */
-        <section className={card}>
-          <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-gray-100 px-4 py-3">
-            <h2 className="text-sm font-semibold text-gray-900">{selectedClass ? classLabel(selectedClass) : ""}</h2>
-            <span className="text-xs text-gray-400">{sessions.length} session{sessions.length === 1 ? "" : "s"}</span>
-          </div>
-          {loadingSessions ? (
-            <p className="p-6 text-sm text-gray-400 animate-pulse">Loading…</p>
-          ) : sessions.length === 0 ? (
-            <p className="p-6 text-sm text-gray-400">No sessions yet — open one from your Overview when class starts.</p>
-          ) : (
-            <Table>
-              <thead>
-                <tr>
-                  <Th>Session</Th>
-                  <Th className="hidden sm:table-cell">Time</Th>
-                  <Th>Attendance</Th>
-                  <Th>Status</Th>
-                </tr>
-              </thead>
-              <tbody>
-                {sessions.map((s) => (
-                  <Tr key={s.publicId} onOpen={() => openSession(s)}>
-                    <Td className="whitespace-nowrap font-medium text-gray-900">{fmtDay(s.openedAt ?? s.expiresAt)}</Td>
-                    <Td className="hidden sm:table-cell whitespace-nowrap text-gray-500">
-                      {fmtTime(s.openedAt)} – {fmtTime(s.closedAt ?? s.expiresAt)}
-                    </Td>
-                    <Td>
-                      <RateBar attended={s.attendedCount ?? 0} enrolled={s.enrolledCount ?? 0} />
-                      {s.pendingBiometricCount > 0 && (
-                        <p className="mt-1 text-xs text-orange-600">{s.pendingBiometricCount} awaiting biometric</p>
-                      )}
-                    </Td>
-                    <Td>
-                      {s.isOpen ? (
-                        <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-green-100 px-2 py-0.5 text-[11px] font-medium text-green-700">
-                          <span className="h-1.5 w-1.5 rounded-full bg-green-500" /> Open now
-                        </span>
-                      ) : (
-                        <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-500">Closed</span>
-                      )}
-                    </Td>
-                  </Tr>
-                ))}
-              </tbody>
-            </Table>
-          )}
-        </section>
       ) : (
         /* One session's roster */
         <section className={card}>
