@@ -416,6 +416,27 @@ export interface StudentAttendanceDetail {
   classes: Array<{ sessionPublicId: string; date: string; subjectName: string; status: string; markedAt: string | null }>;
 }
 
+export interface FacilitatorCohortAnalytics {
+  cohortPublicId: string;
+  cohortName: string;
+  days: number;
+  attendance: InstitutionAnalytics;
+  pendingExtensions: number;
+  assignments: Array<{
+    publicId: string; title: string; subjectName: string; status: string; deadline: string;
+    total: number; onTime: number; late: number; reviewed: number; missing: number; notYet: number;
+  }>;
+  students: Array<{
+    publicId: string; name: string; resumptionRatePercent: number | null; classRatePercent: number | null;
+    handedIn: number; late: number; missing: number;
+  }>;
+}
+
+export const facilitatorAnalyticsApi = {
+  get: (cohortPublicId: string, days: number) =>
+    request<FacilitatorCohortAnalytics>(`/api/facilitator/analytics?cohortPublicId=${cohortPublicId}&days=${days}`),
+};
+
 export const analyticsApi = {
   get: (days: number) => request<InstitutionAnalytics>(`/api/admin/analytics?days=${days}`),
   student: (publicId: string) => request<StudentAttendanceDetail>(`/api/admin/analytics/students/${publicId}`),

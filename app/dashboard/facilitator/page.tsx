@@ -95,8 +95,8 @@ export default function FacilitatorDashboard() {
       await sessionApi.close(openedSession.publicId);
       setMessage({ type: "success", text: "Session closed." });
       setOpenedSession(null);
-    } catch {
-      setMessage({ type: "error", text: "Failed to close session" });
+    } catch (err) {
+      setMessage({ type: "error", text: err instanceof Error ? err.message : "Failed to close session" });
     }
   }
 
@@ -107,8 +107,8 @@ export default function FacilitatorDashboard() {
       setOpenedResumption(null);
       setTodaysCode(null);
       setMessage({ type: "success", text: "Resumption session closed." });
-    } catch {
-      setMessage({ type: "error", text: "Failed to close resumption session" });
+    } catch (err) {
+      setMessage({ type: "error", text: err instanceof Error ? err.message : "Failed to close resumption session" });
     }
   }
 
