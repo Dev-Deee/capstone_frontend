@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { userApi, attendanceApi, resumptionApi, cohortApi } from "@/lib/api";
 import TabBar from "@/components/TabBar";
+import PageHeader, { greeting } from "@/components/PageHeader";
 
 type Tab = "class" | "resumption" | "cohort";
 
@@ -81,15 +82,13 @@ export default function StudentDashboard() {
 
   return (
     <div className="p-6">
-      <div className="mb-5">
-        <h1 className="text-lg font-semibold text-gray-900">Dashboard</h1>
-        {profile && (
-          <p className="text-sm text-gray-400 mt-0.5">
-            Welcome back, {profile.firstName}
-            {inCohort && <> · <span className="text-gray-600">{profile.cohortName}</span></>}
-          </p>
-        )}
-      </div>
+      <PageHeader
+        eyebrow={inCohort ? profile.cohortName : "Student"}
+        title={profile ? `${greeting()}, ${profile.firstName}.` : "Dashboard"}
+        description={inCohort
+          ? "Check in for class or daily resumption below."
+          : "Join your cohort with the invite code you were sent to get started."}
+      />
 
       {message && (
         <div className={`text-sm rounded-lg px-3 py-2 border mb-5 ${
@@ -164,7 +163,7 @@ export default function StudentDashboard() {
             <h2 className="text-sm font-semibold text-gray-700 mb-1">Join a cohort</h2>
             <p className="text-sm text-gray-500 mb-4">
               {inCohort
-                ? "Enter an invite code from your institution. You can only be in one cohort at a time, so if the code is for a different cohort, an admin will need to move you."
+                ? "Enter an invite code from your institution. You can only be in one cohort at a time, so if the code is for a different cohort, an admin or super admin will need to move you."
                 : "Enter the invite code your institution sent you by email or text."}
             </p>
             <form onSubmit={handleJoinCohort} className="flex gap-2 max-w-md">

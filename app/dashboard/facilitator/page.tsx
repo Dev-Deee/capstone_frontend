@@ -5,6 +5,7 @@ import { userApi, sessionApi, resumptionApi, facilitatorCohortApi, cohortApi, su
 import { QrDisplay } from "@/components/QrDisplay";
 import { LiveCodeDisplay } from "@/components/LiveCodeDisplay";
 import TabBar from "@/components/TabBar";
+import PageHeader, { greeting } from "@/components/PageHeader";
 
 export default function FacilitatorDashboard() {
   const [profile, setProfile] = useState<any>(null);
@@ -139,10 +140,11 @@ export default function FacilitatorDashboard() {
 
   return (
     <div className="p-6">
-      <div className="mb-5">
-        <h1 className="text-lg font-semibold text-gray-900">Facilitator Dashboard</h1>
-        {profile && <p className="text-sm text-gray-400 mt-0.5">Welcome back, {profile.firstName}</p>}
-      </div>
+      <PageHeader
+        eyebrow="Facilitator"
+        title={profile ? `${greeting()}, ${profile.firstName}.` : "Overview"}
+        description="Open a class session or today's resumption, and keep the code on screen while students check in."
+      />
 
       {message && (
         <div className={`text-sm rounded-lg px-3 py-2 border mb-5 ${

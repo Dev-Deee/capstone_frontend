@@ -2,20 +2,22 @@
 
 import { useEffect, useState } from "react";
 import { institutionApi } from "@/lib/api";
+import PageHeader from "@/components/PageHeader";
 
 export default function InstitutionPage() {
   const [institution, setInstitution] = useState<any>(null);
   const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
-    institutionApi.getAll()
-      .then((list) => setInstitution(list[0] || null))
+    // The institution this session is working in (never another tenant's).
+    institutionApi.current()
+      .then(setInstitution)
       .catch(() => setLoadError(true));
   }, []);
 
   return (
     <div className="p-6">
-      <h1 className="text-lg font-semibold text-gray-900 mb-5">Institution</h1>
+      <PageHeader title="Institution" description="The organisation this workspace belongs to." />
 
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
         {loadError ? (
@@ -26,7 +28,8 @@ export default function InstitutionPage() {
           <dl className="space-y-4">
             {[
               { label: "Name", value: institution.name },
-              { label: "Address", value: institution.address },
+              { label: "Web address", value: `cadence / ${institution.slug}` },
+              { label: "Postal address", value: institution.address || "—" },
               { label: "Guardian Linkage Mode", value: institution.guardianLinkageMode },
               { label: "Created", value: new Date(institution.createdAt).toLocaleDateString() },
             ].map(({ label, value }) => (
@@ -38,8 +41,8 @@ export default function InstitutionPage() {
             <div>
               <dt className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Status</dt>
               <dd>
-                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${institution.isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
-                  {institution.isActive ? "Active" : "Inactive"}
+                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${institution.status === "ACTIVE" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
+                  {institution.status === "ACTIVE" ? "Active" : institution.status === "PENDING" ? "Pending" : "Suspended"}
                 </span>
               </dd>
             </div>

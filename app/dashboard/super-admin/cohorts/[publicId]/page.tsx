@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, usePathname, useRouter } from "next/navigation";
 import { cohortApi } from "@/lib/api";
+import PageHeader from "@/components/PageHeader";
 
 export default function CohortDetailPage() {
     const params = useParams();
+    const pathname = usePathname();
     const router = useRouter();
     const [cohort, setCohort] = useState<any>(null);
     const [error, setError] = useState<string | null>(null);
@@ -41,11 +43,11 @@ export default function CohortDetailPage() {
 
     return (
         <div className="p-6">
-            <button onClick={() => router.push("/dashboard/super-admin/cohorts")} className="text-xs text-gray-400 hover:text-gray-700 mb-5 block">
+            <button onClick={() => router.push(pathname.startsWith("/dashboard/admin") ? "/dashboard/admin/cohorts" : "/dashboard/super-admin/cohorts")} className="text-xs text-gray-400 hover:text-gray-700 mb-5 block">
                 ← Back to Cohorts
             </button>
 
-            <h1 className="text-lg font-semibold text-gray-900 mb-5">Cohort Detail</h1>
+            <PageHeader title="Cohort Detail" />
 
             {error && (
                 <div className="text-sm rounded-lg px-3 py-2 border bg-red-50 text-red-700 border-red-100 mb-5">

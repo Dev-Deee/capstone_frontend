@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { userApi, authApi } from "@/lib/api";
+import { userApi, authApi, cohortApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 
 type User = {
@@ -14,6 +14,7 @@ type User = {
   phoneNumber: string | null;
   institutionStudentId: string | null;
   roles: string[];
+  cohortPublicId: string | null;
   cohortName: string | null;
   active: boolean;
   accountPending: boolean;
@@ -32,7 +33,7 @@ const ROLE_FILTERS = ["ALL", "STUDENT", "FACILITATOR", "ADMIN", "SUPER_ADMIN"] a
 
 function StatusBadge({ user }: { user: User }) {
   const [label, cls] = !user.active
-    ? ["Deactivated", "bg-red-100 text-red-700"]
+    ? ["Suspended here", "bg-red-100 text-red-700"]
     : user.accountPending
       ? ["Invite pending", "bg-amber-100 text-amber-700"]
       : ["Active", "bg-green-100 text-green-700"];
@@ -54,10 +55,16 @@ export default function UsersSection() {
   const [saving, setSaving] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [cohorts, setCohorts] = useState<{ publicId: string; name: string }[]>([]);
+  const [movingId, setMovingId] = useState<string | null>(null);
+  const [rolesId, setRolesId] = useState<string | null>(null);
+  const [rolesDraft, setRolesDraft] = useState<string[]>([]);
+  const [moveTarget, setMoveTarget] = useState("");
 
   useEffect(() => {
     Promise.all([userApi.getAll(), userApi.getMe()])
       .then(([list, me]) => { setUsers(list); setMeId(me.publicId); })
+      .then(() => cohortApi.getAll().then(setCohorts).catch(() => {}))
       .catch((err) => {
         const text = err instanceof Error ? err.message : "Failed to load users";
         setMessage({
@@ -132,11 +139,59 @@ export default function UsersSection() {
       setMessage({
         type: "success",
         text: updated.active
-          ? `${u.fullName} can sign in again.`
-          : `${u.fullName} has been deactivated and signed out.`,
+          ? `${u.fullName}'s access here is restored.`
+          : `${u.fullName} is suspended from this institution and signed out of it. Their other institutions aren't affected.`,
       });
     } catch (err) {
       setMessage({ type: "error", text: err instanceof Error ? err.message : "Failed to change status" });
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  // Owners only: change someone's roles here. The backend refuses to remove the
+  // institution's last super admin and says so.
+  async function saveRoles(u: User) {
+    setBusyId(u.publicId);
+    setMessage(null);
+    try {
+      const updated: User = await userApi.updateRoles(u.publicId, rolesDraft);
+      replaceUser(updated);
+      setRolesId(null);
+      setMessage({ type: "success", text: `${u.fullName}'s roles updated.` });
+    } catch (err) {
+      setMessage({ type: "error", text: err instanceof Error ? err.message : "Failed to update roles" });
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  function startMove(u: User) {
+    setMessage(null);
+    setEditingId(null);
+    setConfirmDeleteId(null);
+    setMovingId(u.publicId);
+    setMoveTarget("");
+  }
+
+  // Admin/super-admin only: students can't move themselves between cohorts.
+  async function handleMove(e: React.FormEvent, u: User) {
+    e.preventDefault();
+    if (!moveTarget) return;
+    setBusyId(u.publicId);
+    setMessage(null);
+    try {
+      const updated: User = await cohortApi.enrollStudent(moveTarget, u.publicId);
+      replaceUser(updated);
+      setMovingId(null);
+      setMessage({
+        type: "success",
+        text: u.cohortName
+          ? `${u.fullName} moved from ${u.cohortName} to ${updated.cohortName}.`
+          : `${u.fullName} added to ${updated.cohortName}.`,
+      });
+    } catch (err) {
+      setMessage({ type: "error", text: err instanceof Error ? err.message : "Failed to change cohort" });
     } finally {
       setBusyId(null);
     }
@@ -149,7 +204,7 @@ export default function UsersSection() {
       await userApi.remove(u.publicId);
       setUsers((prev) => prev.filter((x) => x.publicId !== u.publicId));
       setConfirmDeleteId(null);
-      setMessage({ type: "success", text: `${u.fullName}'s account was deleted and their personal details removed.` });
+      setMessage({ type: "success", text: `${u.fullName} was removed from this institution. Their account and history are kept.` });
     } catch (err) {
       setMessage({ type: "error", text: err instanceof Error ? err.message : "Failed to delete user" });
     } finally {
@@ -202,7 +257,7 @@ export default function UsersSection() {
               // super admin manages admin accounts. The backend enforces the same rule.
               const isStaffAdmin = isSuperAdmin || u.roles.includes("ADMIN");
               const canEdit = viewerIsSuperAdmin || !isStaffAdmin;
-              const canChangeStatus = canEdit && !isSelf && !isSuperAdmin;
+              const canChangeStatus = canEdit && !isSelf && (!isSuperAdmin || viewerIsSuperAdmin);
               const busy = busyId === u.publicId;
               const emailChanged = form && editingId === u.publicId
                 && form.email.trim().toLowerCase() !== (u.email ?? "").toLowerCase();
@@ -253,9 +308,9 @@ export default function UsersSection() {
 
                       {confirmDeleteId === u.publicId ? (
                         <div className="flex items-center gap-2 text-xs">
-                          <span className="text-red-700">Delete {u.firstName}? Their personal details are removed; this can't be undone.</span>
+                          <span className="text-red-700">Remove {u.firstName} from this institution? Their account and any other institutions are unaffected.</span>
                           <button disabled={busy} onClick={() => handleDelete(u)} className="bg-red-600 text-white font-medium px-3 py-1.5 rounded-md hover:bg-red-700 disabled:opacity-50">
-                            {busy ? "Deleting…" : "Delete"}
+                            {busy ? "Removing…" : "Remove"}
                           </button>
                           <button onClick={() => setConfirmDeleteId(null)} className="text-gray-500 hover:text-gray-800">Cancel</button>
                         </div>
@@ -264,25 +319,95 @@ export default function UsersSection() {
                           {canEdit && (
                             <button onClick={() => startEdit(u)} className="text-blue-600 hover:underline">Edit</button>
                           )}
+                          {viewerIsSuperAdmin && (
+                            <button onClick={() => { setRolesId(rolesId === u.publicId ? null : u.publicId); setRolesDraft(u.roles); setMovingId(null); }}
+                              className="text-blue-600 hover:underline">
+                              Roles
+                            </button>
+                          )}
+                          {canEdit && u.roles.includes("STUDENT") && (
+                            <button onClick={() => startMove(u)} className="text-blue-600 hover:underline">
+                              {u.cohortName ? "Change cohort" : "Add to cohort"}
+                            </button>
+                          )}
                           {canChangeStatus && (
                             <>
                               <button
                                 disabled={busy} onClick={() => toggleActive(u)}
                                 className={`hover:underline disabled:opacity-50 ${u.active ? "text-amber-700" : "text-green-700"}`}
                               >
-                                {busy ? "…" : u.active ? "Deactivate" : "Activate"}
+                                {busy ? "…" : u.active ? "Suspend" : "Restore"}
                               </button>
                               <button
                                 onClick={() => { setConfirmDeleteId(u.publicId); setEditingId(null); }}
                                 className="text-red-600 hover:underline"
                               >
-                                Delete
+                                Remove
                               </button>
                             </>
                           )}
                         </div>
                       )}
                     </div>
+                  )}
+
+                  {rolesId === u.publicId && (
+                    <div className="mt-3 max-w-xl space-y-3 rounded-lg border border-gray-100 bg-gray-50 p-4">
+                      <p className="text-sm text-gray-700">Roles for <span className="font-medium">{u.fullName}</span> in this institution</p>
+                      <div className="flex flex-wrap gap-4">
+                        {[["STUDENT", "Student"], ["FACILITATOR", "Facilitator"], ["ADMIN", "Admin"], ["SUPER_ADMIN", "Super admin (owner)"]].map(([value, label]) => (
+                          <label key={value} className="flex items-center gap-2 text-sm text-gray-700">
+                            <input type="checkbox" checked={rolesDraft.includes(value)}
+                              onChange={(e) => setRolesDraft((d) => e.target.checked ? [...d, value] : d.filter((r) => r !== value))}
+                              className="h-4 w-4 rounded border-gray-300 text-blue-600" />
+                            {label}
+                          </label>
+                        ))}
+                      </div>
+                      <div className="flex gap-2">
+                        <button disabled={rolesDraft.length === 0 || busyId === u.publicId} onClick={() => saveRoles(u)}
+                          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">
+                          {busyId === u.publicId ? "Saving…" : "Save roles"}
+                        </button>
+                        <button onClick={() => setRolesId(null)} className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium hover:bg-white">Cancel</button>
+                      </div>
+                    </div>
+                  )}
+
+                  {movingId === u.publicId && (
+                    <form onSubmit={(e) => handleMove(e, u)} className="mt-3 p-4 rounded-lg bg-gray-50 border border-gray-100 space-y-3 max-w-xl">
+                      <p className="text-sm text-gray-700">
+                        {u.cohortName
+                          ? <>Move <span className="font-medium">{u.fullName}</span> out of <span className="font-medium">{u.cohortName}</span> to:</>
+                          : <>Add <span className="font-medium">{u.fullName}</span> to:</>}
+                      </p>
+                      <select
+                        required value={moveTarget} onChange={(e) => setMoveTarget(e.target.value)}
+                        className={inputClass}
+                      >
+                        <option value="">Select a cohort…</option>
+                        {cohorts.filter((c) => c.publicId !== u.cohortPublicId).map((c) => (
+                          <option key={c.publicId} value={c.publicId}>{c.name}</option>
+                        ))}
+                      </select>
+                      {u.cohortName && (
+                        <p className="text-xs text-gray-500">
+                          Their attendance and submissions in {u.cohortName} are kept. In the new cohort, attendance and
+                          assignment rates count from today.
+                        </p>
+                      )}
+                      <div className="flex gap-2">
+                        <button
+                          type="submit" disabled={!moveTarget || busyId === u.publicId}
+                          className="bg-blue-600 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                        >
+                          {busyId === u.publicId ? "Saving…" : u.cohortName ? "Move student" : "Add to cohort"}
+                        </button>
+                        <button type="button" onClick={() => setMovingId(null)} className="border border-gray-200 text-sm font-medium px-4 py-2 rounded-lg hover:bg-white">
+                          Cancel
+                        </button>
+                      </div>
+                    </form>
                   )}
                 </li>
               );

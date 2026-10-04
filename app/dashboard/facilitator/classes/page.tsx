@@ -9,6 +9,7 @@ export default function FacilitatorClassesPage() {
   return (
     <TabbedPage
       title="My Classes"
+      description="Your students, their attendance, and the work you've set."
       tabs={[
         { id: "students", label: "Students", content: <MyStudentsSection /> },
         { id: "attendance", label: "Attendance", content: <FacilitatorAttendanceSection /> },

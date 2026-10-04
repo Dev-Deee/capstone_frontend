@@ -12,6 +12,8 @@ export default function ResumptionTodaySection() {
   const [selectedId, setSelectedId] = useState("");
   const [newExpiresAt, setNewExpiresAt] = useState("");
   const [isWorking, setIsWorking] = useState(false);
+  const [openCohortId, setOpenCohortId] = useState("");
+  const [openMinutes, setOpenMinutes] = useState(90);
 
   function cohortName(publicId: string) {
     return cohorts.find((c) => c.publicId === publicId)?.name || publicId;
@@ -20,11 +22,9 @@ export default function ResumptionTodaySection() {
   async function loadToday() {
     setMessage(null);
     try {
-      const list = await resumptionApi.getToday();
-      setSessions(list);
-      if (list.length === 0) setMessage({ type: "error", text: "No resumption sessions open today." });
-    } catch {
-      setMessage({ type: "error", text: "Failed to load — check MANAGE_RESUMPTION_CODES" });
+      setSessions(await resumptionApi.getToday());
+    } catch (err) {
+      setMessage({ type: "error", text: err instanceof Error ? err.message : "Failed to load today's sessions" });
     }
   }
 
@@ -32,6 +32,22 @@ export default function ResumptionTodaySection() {
     cohortApi.getAll().then(setCohorts).catch(() => {});
     loadToday();
   }, []);
+
+  // Admins with MANAGE_RESUMPTION_CODES for the cohort, and super admins, can open
+  // today's session; there is one per cohort per day.
+  async function handleOpen(e: React.FormEvent) {
+    e.preventDefault();
+    setIsWorking(true);
+    setMessage(null);
+    try {
+      const opened = await resumptionApi.open({ cohortPublicId: openCohortId, expiryMinutes: openMinutes });
+      setSessions((prev) => [opened, ...prev]);
+      setMessage({ type: "success", text: `Resumption opened for ${cohortName(openCohortId)}.` });
+      setOpenCohortId("");
+    } catch (err) {
+      setMessage({ type: "error", text: err instanceof Error ? err.message : "Failed to open resumption" });
+    } finally { setIsWorking(false); }
+  }
 
   async function handleRegenerate(publicId: string) {
     setIsWorking(true);
@@ -78,6 +94,33 @@ export default function ResumptionTodaySection() {
         </div>
       )}
 
+      {/* Open today's resumption for a cohort that doesn't have one yet */}
+      <form onSubmit={handleOpen} className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 mb-6">
+        <h2 className="text-sm font-semibold text-gray-700 mb-3">Open daily resumption</h2>
+        <div className="flex flex-wrap items-end gap-3">
+          <select
+            required value={openCohortId} onChange={(e) => setOpenCohortId(e.target.value)}
+            className="flex-1 min-w-[200px] px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">Select a cohort…</option>
+            {cohorts
+              .filter((c) => !sessions.some((s) => s.cohortPublicId === c.publicId))
+              .map((c) => <option key={c.publicId} value={c.publicId}>{c.name}</option>)}
+          </select>
+          <label className="text-xs text-gray-500">
+            Stays open for (minutes)
+            <input
+              type="number" min={1} required value={openMinutes}
+              onChange={(e) => setOpenMinutes(Number(e.target.value))}
+              className="mt-1 block w-32 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </label>
+          <button type="submit" disabled={isWorking || !openCohortId} className="bg-blue-600 text-white text-sm font-medium px-5 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50">
+            Open resumption
+          </button>
+        </div>
+      </form>
+
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-sm font-semibold text-gray-700">Today's Sessions</h2>
@@ -85,7 +128,7 @@ export default function ResumptionTodaySection() {
         </div>
 
         {sessions.length === 0 ? (
-          <p className="text-sm text-gray-400">No resumption sessions today.</p>
+          <p className="text-sm text-gray-400">No resumption sessions have been opened today.</p>
         ) : (
           <ul className="space-y-3">
             {sessions.map((s) => (

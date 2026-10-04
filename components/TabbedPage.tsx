@@ -3,12 +3,15 @@
 import { Suspense, type ReactNode } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import TabBar from "@/components/TabBar";
+import PageHeader from "@/components/PageHeader";
 
 export type Tab = { id: string; label: string; content: ReactNode };
 
 // Page title + tab bar, with the active tab kept in ?tab= so links and
 // redirects from the old standalone pages can land on a specific tab.
-function Tabs({ title, tabs }: { title: string; tabs: Tab[] }) {
+type Props = { title: string; description?: string; eyebrow?: string; tabs: Tab[] };
+
+function Tabs({ title, description, eyebrow, tabs }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const requested = useSearchParams().get("tab");
@@ -16,7 +19,7 @@ function Tabs({ title, tabs }: { title: string; tabs: Tab[] }) {
 
   return (
     <div className="p-6">
-      <h1 className="text-lg font-semibold text-gray-900 mb-4">{title}</h1>
+      <PageHeader eyebrow={eyebrow} title={title} description={description} />
       <TabBar
         tabs={tabs}
         active={active.id}
@@ -27,7 +30,7 @@ function Tabs({ title, tabs }: { title: string; tabs: Tab[] }) {
   );
 }
 
-export default function TabbedPage(props: { title: string; tabs: Tab[] }) {
+export default function TabbedPage(props: Props) {
   return (
     <Suspense fallback={<div className="p-6 text-sm text-gray-400">Loading…</div>}>
       <Tabs {...props} />
