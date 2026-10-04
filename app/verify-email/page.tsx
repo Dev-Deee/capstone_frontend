@@ -32,7 +32,7 @@ function VerifyEmailContent() {
   }, [searchParams, router]);
 
   return (
-    <div className="w-full max-w-sm bg-white p-8 rounded-lg shadow-sm border border-gray-200 text-center">
+    <div className="w-full max-w-sm bg-surface p-8 rounded-lg shadow-sm border border-gray-200 text-center">
       {status === "verifying" && (
         <p className="text-gray-500 text-sm">Verifying your email…</p>
       )}

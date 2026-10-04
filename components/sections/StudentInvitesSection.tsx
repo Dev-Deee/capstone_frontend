@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { cohortApi } from "@/lib/api";
+import RowMenu from "@/components/ui/RowMenu";
+import { Table, Td, Th, Tr } from "@/components/ui/Table";
 
 type InviteCode = {
   publicId: string;
@@ -144,7 +146,7 @@ export default function StudentInvitesSection() {
         </div>
       )}
 
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+      <div className="bg-surface rounded-xl border border-gray-200 shadow-sm">
         {/* Cohort + generate */}
         <form onSubmit={handleGenerate} className="p-5 border-b border-gray-100 space-y-3">
           <select
@@ -192,39 +194,46 @@ export default function StudentInvitesSection() {
             ) : codes.length === 0 ? (
               <p className="text-sm text-gray-400">No codes yet — generate one above.</p>
             ) : (
-              <ul className="divide-y divide-gray-100">
-                {codes.map((c) => (
-                  <li key={c.publicId} className="py-3 flex flex-wrap items-center gap-x-4 gap-y-2">
-                    <span className="font-mono text-base font-semibold text-gray-900">{c.code}</span>
-                    <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${
-                      c.valid ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
-                    }`}>
-                      {c.valid ? "Active" : "Inactive"}
-                    </span>
-                    <span className="text-xs text-gray-500">
-                      Used {c.useCount}{c.maxUses ? ` / ${c.maxUses}` : ""} ·{" "}
-                      {c.expiresAt ? `expires ${new Date(c.expiresAt).toLocaleDateString()}` : "no expiry"}
-                    </span>
-                    {c.valid && (
-                      <span className="ml-auto flex gap-3 text-xs">
-                        <button type="button" onClick={() => copy(`code-${c.publicId}`, c.code)} className="text-blue-600 hover:underline">
-                          {copied === `code-${c.publicId}` ? "Copied" : "Copy code"}
-                        </button>
-                        <button type="button" onClick={() => copy(`link-${c.publicId}`, signupLink(c.code))} className="text-blue-600 hover:underline">
-                          {copied === `link-${c.publicId}` ? "Copied" : "Copy signup link"}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setSharing(sharing?.publicId === c.publicId ? null : c)}
-                          className="text-blue-600 font-medium hover:underline"
-                        >
-                          Send to students
-                        </button>
-                      </span>
-                    )}
-                  </li>
-                ))}
-              </ul>
+              <div className="-mx-5">
+                <Table>
+                  <thead>
+                    <tr>
+                      <Th>Code</Th>
+                      <Th>Status</Th>
+                      <Th className="hidden sm:table-cell">Used</Th>
+                      <Th className="hidden sm:table-cell">Expires</Th>
+                      <Th align="right"><span className="sr-only">Actions</span></Th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {codes.map((c) => (
+                      <Tr key={c.publicId} muted={!c.valid}>
+                        <Td><span className="font-mono text-base font-semibold text-gray-900">{c.code}</span></Td>
+                        <Td>
+                          <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${c.valid ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
+                            {c.valid ? "Active" : "Inactive"}
+                          </span>
+                        </Td>
+                        <Td className="hidden sm:table-cell text-gray-600">{c.useCount}{c.maxUses ? ` / ${c.maxUses}` : ""}</Td>
+                        <Td className="hidden sm:table-cell whitespace-nowrap text-gray-600">
+                          {c.expiresAt ? new Date(c.expiresAt).toLocaleDateString() : "No expiry"}
+                        </Td>
+                        <Td align="right">
+                          {copied === `code-${c.publicId}` || copied === `link-${c.publicId}` ? (
+                            <span className="text-xs text-green-600">Copied</span>
+                          ) : c.valid ? (
+                            <RowMenu label={`Actions for ${c.code}`} items={[
+                              { label: "Send to students", onSelect: () => setSharing(c) },
+                              { label: "Copy code", onSelect: () => copy(`code-${c.publicId}`, c.code) },
+                              { label: "Copy signup link", onSelect: () => copy(`link-${c.publicId}`, signupLink(c.code)) },
+                            ]} />
+                          ) : null}
+                        </Td>
+                      </Tr>
+                    ))}
+                  </tbody>
+                </Table>
+              </div>
             )}
           </div>
         )}

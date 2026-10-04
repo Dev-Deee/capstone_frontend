@@ -35,8 +35,8 @@ export default function CheckInGlimpse() {
 
   return (
     <div className="relative">
-      <div className="pointer-events-none absolute -inset-8 rounded-[2rem] bg-gradient-to-br from-blue-100/70 via-white to-white blur-2xl" />
-      <div className="relative rounded-2xl border border-gray-200 bg-white p-6 shadow-[0_1px_2px_rgba(16,24,40,0.04),0_24px_48px_-24px_rgba(16,24,40,0.18)]">
+      <div className="pointer-events-none absolute -inset-8 rounded-[2rem] bg-gradient-to-br from-blue-100/70 via-surface to-surface blur-2xl" />
+      <div className="relative rounded-2xl border border-gray-200 bg-surface p-6 shadow-[0_1px_2px_rgba(16,24,40,0.04),0_24px_48px_-24px_rgba(16,24,40,0.18)]">
         <div className="flex items-center justify-between">
           <p className="text-xs font-medium uppercase tracking-[0.16em] text-gray-400">Daily check-in</p>
           <span className="inline-flex items-center gap-1.5 text-xs font-medium text-green-700">

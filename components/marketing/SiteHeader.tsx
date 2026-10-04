@@ -16,7 +16,7 @@ export default function SiteHeader() {
 
   return (
     <header className={`sticky top-0 z-40 transition-[background-color,box-shadow,border-color] duration-300 ${
-      scrolled ? "border-b border-gray-200/70 bg-white/80 backdrop-blur-md" : "border-b border-transparent bg-white"
+      scrolled ? "border-b border-gray-200/70 bg-surface/80 backdrop-blur-md" : "border-b border-transparent bg-surface"
     }`}>
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
         <Logo />
@@ -26,7 +26,7 @@ export default function SiteHeader() {
           </Link>
           <Link
             href="/signup"
-            className="hidden rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-800 sm:inline-flex"
+            className="hidden rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-800 dark:bg-blue-600 dark:hover:bg-blue-500 sm:inline-flex"
           >
             Create your institution
           </Link>

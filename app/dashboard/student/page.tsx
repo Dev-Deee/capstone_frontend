@@ -109,7 +109,7 @@ export default function StudentDashboard() {
       />
 
       {tab !== "cohort" && !inCohort && (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 text-sm text-gray-600">
+        <div className="bg-surface rounded-xl border border-gray-200 shadow-sm p-6 text-sm text-gray-600">
           You need to join a cohort before you can check in.{" "}
           <button onClick={() => setTab("cohort")} className="text-blue-600 font-medium hover:underline">
             Enter your invite code
@@ -118,7 +118,7 @@ export default function StudentDashboard() {
       )}
 
       {tab === "class" && inCohort && (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+        <div className="bg-surface rounded-xl border border-gray-200 shadow-sm p-6">
           <h2 className="text-sm font-semibold text-gray-700 mb-1">Mark Class Attendance</h2>
           <p className="text-sm text-gray-500 mb-3">Enter the code your facilitator is showing for this class.</p>
           <form onSubmit={handleMarkClassAttendance} className="flex gap-2 max-w-md">
@@ -135,7 +135,7 @@ export default function StudentDashboard() {
       )}
 
       {tab === "resumption" && inCohort && (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+        <div className="bg-surface rounded-xl border border-gray-200 shadow-sm p-6">
           <h2 className="text-sm font-semibold text-gray-700 mb-1">Mark Daily Resumption</h2>
           <p className="text-sm text-gray-500 mb-3">Check in once a day when you arrive on campus.</p>
           <form onSubmit={handleMarkResumption} className="flex gap-2 max-w-md">
@@ -152,7 +152,7 @@ export default function StudentDashboard() {
       )}
 
       {tab === "cohort" && (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+        <div className="bg-surface rounded-xl border border-gray-200 shadow-sm">
           {inCohort && (
             <div className="p-6 border-b border-gray-100">
               <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Your cohort</p>

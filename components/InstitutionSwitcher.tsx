@@ -72,7 +72,7 @@ export default function InstitutionSwitcher() {
       </button>
 
       {open && (
-        <div role="menu" className="absolute bottom-full left-0 right-0 z-10 mb-2 overflow-hidden rounded-xl bg-white text-gray-900 shadow-xl ring-1 ring-black/5">
+        <div role="menu" className="absolute bottom-full left-0 right-0 z-10 mb-2 overflow-hidden rounded-xl bg-surface text-gray-900 shadow-xl ring-1 ring-black/5">
           {others.length > 0 && (
             <div className="py-1">
               <p className="px-3 pb-1 pt-2 text-[10.5px] font-medium uppercase tracking-[0.16em] text-gray-400">Switch to</p>

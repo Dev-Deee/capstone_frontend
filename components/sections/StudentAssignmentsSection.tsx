@@ -2,46 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { submissionApi, assignmentApi, extensionRequestApi } from "@/lib/api";
+import ListToolbar from "@/components/ui/ListToolbar";
 
 type SubmissionEntry = {
   submission: any;
   assignment: any;
 };
-
-type SubmissionStatusPillProps = { status: string };
-
-function SubmissionStatusPill({ status }: SubmissionStatusPillProps) {
-  const map: Record<string, string> = {
-    PENDING: "bg-gray-100 text-gray-500",
-    SUBMITTED: "bg-green-100 text-green-700",
-    LATE_SUBMITTED: "bg-amber-100 text-amber-700",
-    MISSING: "bg-red-100 text-red-600",
-    REVIEWED: "bg-blue-100 text-blue-700",
-  };
-  const cls = map[status] ?? "bg-gray-100 text-gray-500";
-  return (
-    <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${cls}`}>
-      {status.replace("_", " ")}
-    </span>
-  );
-}
-
-type AssignmentStatusPillProps = { status: string };
-
-function AssignmentStatusPill({ status }: AssignmentStatusPillProps) {
-  const map: Record<string, string> = {
-    DRAFT: "bg-gray-100 text-gray-500",
-    OPEN: "bg-green-100 text-green-700",
-    PUBLISHED: "bg-blue-100 text-blue-700",
-    CLOSED: "bg-gray-200 text-gray-600",
-  };
-  const cls = map[status] ?? "bg-gray-100 text-gray-500";
-  return (
-    <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${cls}`}>
-      {status}
-    </span>
-  );
-}
 
 type SubmitFormProps = {
   submissionPublicId: string;
@@ -75,7 +41,7 @@ function SubmitForm({ submissionPublicId, onSuccess }: SubmitFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mt-3 pt-3 border-t border-gray-100 space-y-3">
+    <form onSubmit={handleSubmit} className="space-y-3 rounded-xl border border-gray-200 bg-gray-50 p-4">
       <div className="flex gap-2">
         <button
           type="button"
@@ -99,7 +65,7 @@ function SubmitForm({ submissionPublicId, onSuccess }: SubmitFormProps) {
           placeholder="https://…"
           value={linkUrl}
           onChange={(e) => setLinkUrl(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-surface focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       ) : (
         <input
@@ -153,14 +119,14 @@ function ExtensionForm({ submissionPublicId, onSuccess }: ExtensionFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mt-3 pt-3 border-t border-gray-100 space-y-2">
-      <p className="text-xs font-medium text-gray-600">Request Deadline Extension</p>
+    <form onSubmit={handleSubmit} className="space-y-2 rounded-xl border border-gray-200 bg-gray-50 p-4">
+      <p className="text-xs font-medium text-gray-600">Ask for more time — your facilitator decides</p>
       <input
         type="datetime-local"
         required
         value={requestedNewDeadline}
         onChange={(e) => setRequestedNewDeadline(e.target.value)}
-        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-surface focus:outline-none focus:ring-2 focus:ring-blue-500"
       />
       <textarea
         required
@@ -168,7 +134,7 @@ function ExtensionForm({ submissionPublicId, onSuccess }: ExtensionFormProps) {
         value={reason}
         onChange={(e) => setReason(e.target.value)}
         rows={2}
-        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-surface focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
       />
       {error && <p className="text-xs text-red-600">{error}</p>}
       <button
@@ -182,160 +148,224 @@ function ExtensionForm({ submissionPublicId, onSuccess }: ExtensionFormProps) {
   );
 }
 
+type Group = "DUE" | "NEW" | "SUBMITTED" | "REVIEWED" | "MISSED";
+type Filter = Group | "ALL";
+
+const GROUPS: { value: Group; label: string; hint: string }[] = [
+  { value: "DUE", label: "Due soon", hint: "Due in the next 3 days and not handed in yet." },
+  { value: "NEW", label: "New", hint: "Not handed in yet, with time to spare." },
+  { value: "SUBMITTED", label: "Submitted", hint: "Handed in and waiting for your facilitator." },
+  { value: "REVIEWED", label: "Reviewed", hint: "Your facilitator has reviewed these." },
+  { value: "MISSED", label: "Missed", hint: "The deadline passed without a hand-in." },
+];
+const SOON_MS = 3 * 86_400_000;
+
+// Which pile an assignment belongs in, from the student's point of view. Uses
+// the deadline that actually applies (an approved extension's, if any).
+function groupOf(sub: any, a: any): Group {
+  if (sub.status === "REVIEWED") return "REVIEWED";
+  if (sub.status === "SUBMITTED" || sub.status === "LATE_SUBMITTED") return "SUBMITTED";
+  if (sub.status === "MISSING") return "MISSED";
+  const due = new Date(sub.effectiveDeadline ?? a?.deadline).getTime();
+  if (a?.status === "CLOSED" || due < Date.now()) return "MISSED";
+  return due - Date.now() <= SOON_MS ? "DUE" : "NEW";
+}
+
+const deadlineOf = (sub: any, a: any) => new Date(sub.effectiveDeadline ?? a?.deadline);
+
+function dueText(d: Date) {
+  const ms = d.getTime() - Date.now();
+  const abs = Math.abs(ms);
+  const hours = Math.round(abs / 3_600_000);
+  const days = Math.round(abs / 86_400_000);
+  const span = hours < 24 ? `${hours} hour${hours === 1 ? "" : "s"}` : `${days} day${days === 1 ? "" : "s"}`;
+  return ms >= 0 ? `Due in ${span}` : `Was due ${span} ago`;
+}
+
+const PILL: Record<string, [string, string]> = {
+  DUE: ["Due soon", "bg-amber-100 text-amber-700"],
+  NEW: ["To do", "bg-blue-100 text-blue-700"],
+  SUBMITTED: ["Submitted", "bg-green-100 text-green-700"],
+  LATE_SUBMITTED: ["Submitted late", "bg-amber-100 text-amber-700"],
+  REVIEWED: ["Reviewed", "bg-blue-100 text-blue-700"],
+  MISSED: ["Missed", "bg-red-100 text-red-700"],
+};
+
+function Pill({ kind }: { kind: string }) {
+  const [label, cls] = PILL[kind] ?? [kind, "bg-gray-100 text-gray-500"];
+  return <span className={`whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-medium ${cls}`}>{label}</span>;
+}
+
 export default function StudentAssignmentsSection() {
   const [entries, setEntries] = useState<SubmissionEntry[]>([]);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [extensionOpen, setExtensionOpen] = useState<Record<string, boolean>>({});
+  const [filter, setFilter] = useState<Filter | null>(null);
+  const [search, setSearch] = useState("");
+  const [open, setOpen] = useState<{ id: string; kind: "submit" | "extension" } | null>(null);
 
   function loadData() {
     submissionApi
       .getMine()
-      .then((submissions) => {
-        return Promise.all(
-          submissions.map((sub: any) =>
-            assignmentApi
-              .getOne(sub.assignmentPublicId)
-              .then((assignment) => ({ submission: sub, assignment }))
-              .catch(() => ({ submission: sub, assignment: null }))
-          )
-        ).then((results) => {
-          setEntries(results);
-        });
-      })
+      .then((submissions) => Promise.all(
+        submissions.map((sub: any) =>
+          assignmentApi.getOne(sub.assignmentPublicId)
+            .then((assignment) => ({ submission: sub, assignment }))
+            .catch(() => ({ submission: sub, assignment: null })))
+      ).then(setEntries))
       .catch((err: Error) => setMessage({ type: "error", text: err.message }))
       .finally(() => setIsLoading(false));
   }
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  function toggleExtension(submissionPublicId: string) {
-    setExtensionOpen((prev) => ({ ...prev, [submissionPublicId]: !prev[submissionPublicId] }));
-  }
+  useEffect(() => { loadData(); }, []);
 
   if (isLoading) {
     return <div className="flex items-center justify-center h-64 text-gray-400 text-sm">Loading…</div>;
   }
 
-  return (
-    <div>
-      <div className="mb-5">
-        <p className="text-sm text-gray-400 mt-0.5">View assignments and submit your work</p>
-      </div>
+  const q = search.trim().toLowerCase();
+  const grouped = entries
+    .filter(({ assignment }) => !q || [assignment?.title, assignment?.description].some((v: string | undefined) => v?.toLowerCase().includes(q)))
+    .map((e) => ({ ...e, group: groupOf(e.submission, e.assignment) }));
+  const count = (g: Group) => grouped.filter((e) => e.group === g).length;
+  // Open on the most pressing pile that has anything in it.
+  const active: Filter = filter ?? (GROUPS.find((g) => count(g.value) > 0)?.value ?? "ALL");
+  const visible = grouped
+    .filter((e) => active === "ALL" || e.group === active)
+    .sort((x, y) => {
+      const dx = deadlineOf(x.submission, x.assignment).getTime(), dy = deadlineOf(y.submission, y.assignment).getTime();
+      // Upcoming work soonest-first; finished or missed work most-recent-first.
+      return x.group === "DUE" || x.group === "NEW" ? dx - dy : dy - dx;
+    });
+  const hint = GROUPS.find((g) => g.value === active)?.hint;
 
+  return (
+    <div className="space-y-4">
       {message && (
-        <div
-          className={`text-sm rounded-lg px-3 py-2 border mb-5 ${
-            message.type === "success"
-              ? "bg-green-50 text-green-700 border-green-100"
-              : "bg-red-50 text-red-700 border-red-100"
-          }`}
-        >
+        <div className={`text-sm rounded-lg px-3 py-2 border ${
+          message.type === "success" ? "bg-green-50 text-green-700 border-green-100" : "bg-red-50 text-red-700 border-red-100"
+        }`}>
           {message.text}
         </div>
       )}
 
-      {entries.length === 0 ? (
-        <div className="bg-white rounded-lg border border-gray-200 p-5">
-          <p className="text-sm text-gray-400">No assignments found.</p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {entries.map(({ submission, assignment }) => {
-            const canSubmit =
-              assignment &&
-              (submission.status === "PENDING" || submission.status === "SUBMITTED") &&
-              (submission.resubmissionCount ?? 0) < (assignment.maxResubmissions ?? 0);
-            const resubLimitReached =
-              assignment &&
-              (submission.resubmissionCount ?? 0) >= (assignment.maxResubmissions ?? 0) &&
-              submission.status !== "REVIEWED" &&
-              submission.status !== "MISSING";
-            const canRequestExtension =
-              assignment && assignment.status !== "CLOSED";
+      <section className="rounded-2xl border border-gray-200 bg-surface shadow-sm">
+        <ListToolbar
+          count={visible.length}
+          noun={visible.length === 1 ? "assignment" : "assignments"}
+          segments={[
+            ...GROUPS.map((g) => ({ value: g.value as Filter, label: g.label, count: count(g.value) })),
+            { value: "ALL" as Filter, label: "All", count: grouped.length },
+          ]}
+          segment={active}
+          onSegment={(v) => { setFilter(v); setOpen(null); }}
+          search={search}
+          onSearch={setSearch}
+          searchPlaceholder="Assignment…"
+        />
+        {hint && <p className="border-b border-gray-100 px-4 py-2 text-xs text-gray-400">{hint}</p>}
 
-            return (
-              <div
-                key={submission.publicId}
-                className="bg-white rounded-lg border border-gray-200 p-5"
-              >
-                {/* Header */}
-                <div className="flex items-start justify-between gap-3 mb-2">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex flex-wrap items-center gap-2 mb-1">
-                      <h2 className="text-sm font-semibold text-gray-900">
-                        {assignment?.title ?? "Unknown Assignment"}
-                      </h2>
-                      {assignment && <AssignmentStatusPill status={assignment.status} />}
+        {entries.length === 0 ? (
+          <p className="p-6 text-sm text-gray-400">No assignments yet — they appear here when your facilitator publishes one.</p>
+        ) : visible.length === 0 ? (
+          <p className="p-6 text-sm text-gray-400">{q ? "No assignments match." : "Nothing here."}</p>
+        ) : (
+          <ul className="divide-y divide-gray-100">
+            {visible.map(({ submission, assignment, group }) => {
+              const due = deadlineOf(submission, assignment);
+              const firstHandIn = !submission.submittedAt;
+              const canSubmit = assignment?.status === "OPEN" && due.getTime() > Date.now()
+                && submission.status !== "REVIEWED" && submission.status !== "MISSING"
+                && (firstHandIn || (submission.resubmissionCount ?? 0) < (assignment?.maxResubmissions ?? 0));
+              const resubsLeft = Math.max(0, (assignment?.maxResubmissions ?? 0) - (submission.resubmissionCount ?? 0));
+              const extensionPending = submission.extensionStatus === "PENDING_APPROVAL";
+              const canAskForTime = assignment && assignment.status !== "CLOSED" && !extensionPending
+                && (group === "DUE" || group === "NEW" || group === "MISSED") && submission.status !== "MISSING";
+              const isOpenRow = open?.id === submission.publicId;
+              const pillKind = group === "SUBMITTED" ? submission.status : group;
+
+              return (
+                <li key={submission.publicId} className="px-4 py-4">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="font-medium text-gray-900">{assignment?.title ?? "Unknown assignment"}</h3>
+                        <Pill kind={pillKind} />
+                      </div>
+                      {assignment?.description && <p className="mt-1 text-sm text-gray-500 line-clamp-2">{assignment.description}</p>}
+                      {assignment?.attachmentUrl && (
+                        <a href={assignment.attachmentUrl} target="_blank" rel="noopener noreferrer"
+                          className="mt-1.5 inline-flex max-w-full items-center gap-1.5 rounded-lg border border-gray-200 px-2.5 py-1 text-xs text-blue-600 hover:bg-blue-50">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m21 11-8.6 8.6a5 5 0 0 1-7-7l8.6-8.6a3.3 3.3 0 0 1 4.7 4.7l-8.6 8.6a1.7 1.7 0 0 1-2.4-2.4l7.9-7.9" /></svg>
+                          <span className="truncate">{assignment.attachmentName ?? "Attachment"}</span>
+                        </a>
+                      )}
+                      <p className={`mt-1.5 text-xs ${group === "DUE" ? "text-amber-700" : group === "MISSED" ? "text-red-600" : "text-gray-400"}`}>
+                        {group === "SUBMITTED" || group === "REVIEWED"
+                          ? `Handed in ${new Date(submission.submittedAt).toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}`
+                          : dueText(due)}
+                        {" · "}
+                        {due.toLocaleString(undefined, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                        {submission.extensionStatus === "APPROVED" && " · extended"}
+                        {extensionPending && " · extension requested"}
+                        {submission.extensionStatus === "DENIED" && " · extension declined"}
+                      </p>
                     </div>
-                    {assignment?.description && (
-                      <p className="text-xs text-gray-500 line-clamp-2">{assignment.description}</p>
-                    )}
+                    <div className="flex shrink-0 items-center gap-2">
+                      {canAskForTime && (
+                        <button onClick={() => setOpen(isOpenRow && open?.kind === "extension" ? null : { id: submission.publicId, kind: "extension" })}
+                          className="rounded-lg px-3 py-1.5 text-sm text-gray-500 hover:bg-gray-50 hover:text-gray-900">
+                          Ask for more time
+                        </button>
+                      )}
+                      {canSubmit && (
+                        <button onClick={() => setOpen(isOpenRow && open?.kind === "submit" ? null : { id: submission.publicId, kind: "submit" })}
+                          className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700">
+                          {firstHandIn ? "Hand in" : `Resubmit (${resubsLeft} left)`}
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  <SubmissionStatusPill status={submission.status} />
-                </div>
 
-                {/* Deadline */}
-                {assignment?.deadline && (
-                  <p className="text-xs text-gray-400 mb-2">
-                    Deadline: {new Date(assignment.deadline).toLocaleString()}
-                  </p>
-                )}
+                  {assignment?.clarificationNote && (
+                    <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
+                      <p className="text-xs font-medium text-amber-800">Note from your facilitator</p>
+                      <p className="text-xs text-amber-700">{assignment.clarificationNote}</p>
+                    </div>
+                  )}
 
-                {/* Clarification note */}
-                {submission.clarificationNote && (
-                  <div className="bg-amber-50 border border-amber-200 rounded-md px-3 py-2 mb-3">
-                    <p className="text-xs font-medium text-amber-800 mb-0.5">Facilitator Note</p>
-                    <p className="text-xs text-amber-700">{submission.clarificationNote}</p>
-                  </div>
-                )}
-
-                {/* Submission form */}
-                {canSubmit && (
-                  <SubmitForm
-                    submissionPublicId={submission.publicId}
-                    onSuccess={() => {
-                      setMessage({ type: "success", text: "Submitted successfully." });
-                      setIsLoading(true);
-                      loadData();
-                    }}
-                  />
-                )}
-
-                {/* Resubmission limit */}
-                {resubLimitReached && (
-                  <p className="text-xs text-gray-500 mt-3 pt-3 border-t border-gray-100">
-                    Resubmission limit reached.
-                  </p>
-                )}
-
-                {/* Extension request */}
-                {canRequestExtension && (
-                  <div className="mt-3">
-                    {extensionOpen[submission.publicId] ? (
+                  {isOpenRow && open?.kind === "submit" && (
+                    <div className="mt-3">
+                      <SubmitForm
+                        submissionPublicId={submission.publicId}
+                        onSuccess={() => {
+                          setMessage({ type: "success", text: `"${assignment?.title}" handed in.` });
+                          setOpen(null);
+                          setIsLoading(true);
+                          loadData();
+                        }}
+                      />
+                    </div>
+                  )}
+                  {isOpenRow && open?.kind === "extension" && (
+                    <div className="mt-3">
                       <ExtensionForm
                         submissionPublicId={submission.publicId}
-                        onSuccess={() =>
-                          setExtensionOpen((prev) => ({ ...prev, [submission.publicId]: false }))
-                        }
+                        onSuccess={() => {
+                          setMessage({ type: "success", text: "Extension request sent to your facilitator." });
+                          setOpen(null);
+                          setIsLoading(true);
+                          loadData();
+                        }}
                       />
-                    ) : (
-                      <button
-                        onClick={() => toggleExtension(submission.publicId)}
-                        className="text-xs text-gray-500 hover:text-gray-900 underline"
-                      >
-                        Request Extension
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
     </div>
   );
 }

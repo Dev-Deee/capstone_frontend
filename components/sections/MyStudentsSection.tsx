@@ -2,6 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { userApi } from "@/lib/api";
+import Avatar from "@/components/ui/Avatar";
+import ListToolbar from "@/components/ui/ListToolbar";
+import RowMenu from "@/components/ui/RowMenu";
+import { Table, Td, Th, Tr } from "@/components/ui/Table";
+import CollapsibleGroup, { initialOpen } from "@/components/ui/CollapsibleGroup";
+
+type StatusFilter = "ALL" | "ACTIVE" | "INACTIVE";
+const NO_COHORT = "Not in a cohort";
 
 type Student = {
   publicId: string;
@@ -13,16 +21,14 @@ type Student = {
   active: boolean;
 };
 
-const inputClass =
-  "w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500";
-
 // A facilitator's roster: students in the cohorts they teach. Facilitators can
 // deactivate/reactivate a student's access; editing and deleting stay with admins.
 export default function MyStudentsSection() {
   const [students, setStudents] = useState<Student[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [cohort, setCohort] = useState("ALL");
+  const [status, setStatus] = useState<StatusFilter>("ALL");
+  const [openGroups, setOpenGroups] = useState<Set<string> | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
@@ -33,16 +39,34 @@ export default function MyStudentsSection() {
       .finally(() => setIsLoading(false));
   }, []);
 
-  const cohorts = useMemo(
-    () => Array.from(new Set(students.map((s) => s.cohortName).filter(Boolean))) as string[],
-    [students]);
+  const q = search.trim().toLowerCase();
+  const matching = useMemo(
+    () => students.filter((s) => !q || [s.fullName, s.email, s.institutionStudentId].some((v) => v?.toLowerCase().includes(q))),
+    [students, q]);
+  const visible = matching.filter((s) => status === "ALL" || (status === "ACTIVE") === s.active);
 
-  const visible = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return students.filter((s) =>
-      (cohort === "ALL" || s.cohortName === cohort) &&
-      (!q || [s.fullName, s.email, s.institutionStudentId].some((v) => v?.toLowerCase().includes(q))));
-  }, [students, search, cohort]);
+  // One group per cohort, alphabetical, students alphabetical within.
+  const groups = useMemo(() => {
+    const map = new Map<string, Student[]>();
+    for (const s of visible) {
+      const key = s.cohortName ?? NO_COHORT;
+      map.set(key, [...(map.get(key) ?? []), s]);
+    }
+    return [...map.entries()]
+      .sort(([a], [b]) => (a === NO_COHORT ? 1 : b === NO_COHORT ? -1 : a.localeCompare(b, undefined, { numeric: true })))
+      .map(([name, list]) => [name, list.sort((x, y) => x.fullName.localeCompare(y.fullName, undefined, { numeric: true }))] as const);
+  }, [visible]);
+
+  const allKeys = groups.map(([name]) => name);
+  const open = openGroups ?? initialOpen(allKeys);
+  // While searching, show every group that has a match.
+  const isOpen = (key: string) => Boolean(q) || open.has(key);
+  const allOpen = allKeys.length > 0 && allKeys.every((k) => open.has(k));
+  const toggle = (key: string) => {
+    const next = new Set(open);
+    if (next.has(key)) next.delete(key); else next.add(key);
+    setOpenGroups(next);
+  };
 
   async function toggleActive(s: Student) {
     setBusyId(s.publicId);
@@ -75,54 +99,92 @@ export default function MyStudentsSection() {
         </div>
       )}
 
-      <div className="flex flex-wrap gap-3 mb-4">
-        <input
-          type="search" placeholder="Search name, email or student ID…"
-          value={search} onChange={(e) => setSearch(e.target.value)}
-          className={`${inputClass} max-w-sm`}
-        />
-        {cohorts.length > 1 && (
-          <select value={cohort} onChange={(e) => setCohort(e.target.value)} className={`${inputClass} w-auto`}>
-            <option value="ALL">All cohorts</option>
-            {cohorts.map((c) => <option key={c} value={c}>{c}</option>)}
-          </select>
-        )}
-      </div>
+      <div className="space-y-4">
+        <div className="rounded-2xl border border-gray-200 bg-surface shadow-sm">
+          <ListToolbar
+            count={visible.length}
+            noun={visible.length === 1 ? "student" : "students"}
+            segments={[
+              { value: "ALL" as StatusFilter, label: "All", count: matching.length },
+              { value: "ACTIVE" as StatusFilter, label: "Active", count: matching.filter((s) => s.active).length },
+              { value: "INACTIVE" as StatusFilter, label: "Deactivated", count: matching.filter((s) => !s.active).length },
+            ]}
+            segment={status}
+            onSegment={setStatus}
+            search={search}
+            onSearch={setSearch}
+            searchPlaceholder="Name, email or student ID…"
+          >
+            {allKeys.length > 1 && !q && (
+              <button type="button" onClick={() => setOpenGroups(allOpen ? new Set() : new Set(allKeys))}
+                className="rounded-lg px-2.5 py-1.5 text-sm text-blue-600 hover:bg-blue-50">
+                {allOpen ? "Collapse all" : "Expand all"}
+              </button>
+            )}
+          </ListToolbar>
+        </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
         {isLoading ? (
           <p className="p-6 text-sm text-gray-400 animate-pulse">Loading…</p>
-        ) : visible.length === 0 ? (
-          <p className="p-6 text-sm text-gray-400">
-            {students.length === 0 ? "No students are enrolled in the cohorts you teach yet." : "No students match your search."}
-          </p>
-        ) : (
-          <ul className="divide-y divide-gray-100">
-            {visible.map((s) => (
-              <li key={s.publicId} className={`px-5 py-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm ${!s.active ? "bg-gray-50" : ""}`}>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <p className={`font-medium ${s.active ? "text-gray-900" : "text-gray-500"}`}>{s.fullName}</p>
-                    <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${
-                      s.active ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-                    }`}>
-                      {s.active ? "Active" : "Deactivated"}
-                    </span>
-                  </div>
-                  <p className="text-xs text-gray-400 mt-0.5 truncate">
-                    {s.email}{s.institutionStudentId ? ` · ${s.institutionStudentId}` : ""}{s.cohortName ? ` · ${s.cohortName}` : ""}
-                  </p>
-                </div>
-                <button
-                  disabled={busyId === s.publicId} onClick={() => toggleActive(s)}
-                  className={`text-xs hover:underline disabled:opacity-50 ${s.active ? "text-amber-700" : "text-green-700"}`}
-                >
-                  {busyId === s.publicId ? "…" : s.active ? "Deactivate" : "Activate"}
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
+        ) : groups.length === 0 ? (
+          <div className="rounded-2xl border border-gray-200 bg-surface p-6 text-sm text-gray-400 shadow-sm">
+            {students.length === 0 ? "No students are enrolled in the cohorts you teach yet." : "No students match."}
+          </div>
+        ) : groups.map(([name, list]) => {
+          const inactive = list.filter((s) => !s.active).length;
+          return (
+            <CollapsibleGroup
+              key={name}
+              title={name}
+              meta={`${list.length} student${list.length === 1 ? "" : "s"}${inactive ? ` · ${inactive} deactivated` : ""}`}
+              open={isOpen(name)}
+              onToggle={() => toggle(name)}
+            >
+              <Table>
+                <thead>
+                  <tr>
+                    <Th>Name</Th>
+                    <Th className="hidden md:table-cell">Student ID</Th>
+                    <Th className="hidden sm:table-cell">Phone</Th>
+                    <Th>Status</Th>
+                    <Th align="right"><span className="sr-only">Actions</span></Th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {list.map((s) => (
+                    <Tr key={s.publicId} muted={!s.active}>
+                        <Td>
+                          <div className="flex items-center gap-3 min-w-0">
+                            <Avatar name={s.fullName} />
+                            <div className="min-w-0">
+                              <p className="truncate font-medium text-gray-900">{s.fullName}</p>
+                              <p className="truncate text-xs text-gray-400">{s.email}</p>
+                            </div>
+                          </div>
+                        </Td>
+                        <Td className="hidden md:table-cell text-gray-600">{s.institutionStudentId ?? <span className="text-gray-300">—</span>}</Td>
+                        <Td className="hidden sm:table-cell whitespace-nowrap text-gray-600">{s.phoneNumber ?? <span className="text-gray-300">—</span>}</Td>
+                        <Td>
+                          <span className={`whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                            s.active ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+                          }`}>
+                            {s.active ? "Active" : "Deactivated"}
+                          </span>
+                        </Td>
+                        <Td align="right">
+                          {busyId === s.publicId ? <span className="text-xs text-gray-400">…</span> : (
+                            <RowMenu label={`Actions for ${s.fullName}`} items={[
+                              { label: s.active ? "Deactivate" : "Activate", onSelect: () => toggleActive(s), tone: s.active ? "warn" : undefined },
+                            ]} />
+                          )}
+                        </Td>
+                      </Tr>
+                  ))}
+                </tbody>
+              </Table>
+            </CollapsibleGroup>
+          );
+        })}
       </div>
     </div>
   );

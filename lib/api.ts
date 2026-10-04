@@ -178,6 +178,7 @@ export const authApi = {
 // --- Users ---
 export const userApi = {
   getAll: () => request<any[]>("/api/users"),
+  getOne: (publicId: string) => request<any>(`/api/users/${publicId}`),
   update: (publicId: string, data: {
     firstName: string; middleName?: string; lastName: string; phoneNumber?: string; institutionStudentId?: string;
   }) => request<any>(`/api/users/${publicId}`, { method: "PATCH", body: JSON.stringify(data) }),
@@ -396,6 +397,30 @@ export const resumptionApi = {
 };
 
 // --- Admin Attendance Reporting ---
+// Analytics dashboard — over the cohorts the caller may see (VIEW_INSTITUTION_ANALYTICS).
+export interface InstitutionAnalytics {
+  days: number;
+  cohortCount: number;
+  studentCount: number;
+  resumptionRatePercent: number | null;
+  classRatePercent: number | null;
+  today: { expected: number; present: number; late: number; pendingBiometric: number; openSessions: number };
+  split: { present: number; late: number; absent: number; pendingBiometric: number };
+  trend: Array<{ date: string; resumptionRatePercent: number | null; classRatePercent: number | null }>;
+}
+
+export interface StudentAttendanceDetail {
+  cohortPublicId: string | null;
+  cohortName: string | null;
+  resumption: Array<{ sessionPublicId: string; date: string; status: string; checkedInAt: string | null }>;
+  classes: Array<{ sessionPublicId: string; date: string; subjectName: string; status: string; markedAt: string | null }>;
+}
+
+export const analyticsApi = {
+  get: (days: number) => request<InstitutionAnalytics>(`/api/admin/analytics?days=${days}`),
+  student: (publicId: string) => request<StudentAttendanceDetail>(`/api/admin/analytics/students/${publicId}`),
+};
+
 export const adminAttendanceApi = {
   getAllCohorts: () => request<Array<{
     cohortPublicId: string; cohortName: string; studentCount: number; averageRatePercent: number;
@@ -421,6 +446,27 @@ export const assignmentApi = {
     request<any[]>(`/api/assignments/cohort/${cohortPublicId}`),
   getOne: (publicId: string) =>
     request<any>(`/api/assignments/${publicId}`),
+  // Publish later: an ISO local date-time, or null to clear the schedule.
+  schedule: (publicId: string, publishAt: string | null) =>
+    request<any>(`/api/assignments/${publicId}/schedule`, { method: "PATCH", body: JSON.stringify({ publishAt }) }),
+  attach: async (publicId: string, file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const token = getAccessToken();
+    const res = await fetch(`${API_BASE}/api/assignments/${publicId}/attachment`, {
+      method: "POST",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    });
+    if (!res.ok) {
+      let message = res.status === 413 ? "That file is too large (5 MB max)" : "Upload failed";
+      try { message = (await res.json()).message || message; } catch {}
+      throw new Error(message);
+    }
+    return res.json();
+  },
+  removeAttachment: (publicId: string) =>
+    request<any>(`/api/assignments/${publicId}/attachment`, { method: "DELETE" }),
 };
 
 // --- Submissions ---

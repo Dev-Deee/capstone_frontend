@@ -47,7 +47,7 @@ export default function ActiveDevices() {
   }
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6">
+    <div className="bg-surface rounded-xl border border-gray-200 p-6">
       <h2 className="text-sm font-semibold text-gray-900 mb-2">Active Devices</h2>
       <p className="text-sm text-gray-500 mb-4">Devices currently signed in to your account. Revoke any you don't recognise.</p>
       {error && <p className="text-sm text-red-600 mb-3">{error}</p>}

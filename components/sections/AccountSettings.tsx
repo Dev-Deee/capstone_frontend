@@ -164,7 +164,7 @@ export default function AccountSettings() {
           )}
 
           {activeTab === "info" && (
-            <div className="bg-white rounded-xl border border-gray-200 p-6">
+            <div className="bg-surface rounded-xl border border-gray-200 p-6">
               <h2 className="text-sm font-semibold text-gray-900 mb-5">Profile Information</h2>
 
               {/* Avatar upload */}
@@ -224,7 +224,7 @@ export default function AccountSettings() {
           )}
 
           {activeTab === "phone" && (
-            <div className="bg-white rounded-xl border border-gray-200 p-6">
+            <div className="bg-surface rounded-xl border border-gray-200 p-6">
               <h2 className="text-sm font-semibold text-gray-900 mb-5">Phone Verification</h2>
 
               {profile?.phoneVerified ? (
@@ -274,7 +274,7 @@ export default function AccountSettings() {
           )}
 
           {activeTab === "password" && (
-            <div className="bg-white rounded-xl border border-gray-200 p-6">
+            <div className="bg-surface rounded-xl border border-gray-200 p-6">
               <h2 className="text-sm font-semibold text-gray-900 mb-5">Change Password</h2>
               <form onSubmit={handleChangePassword} className="space-y-4">
                 <div>
@@ -309,7 +309,7 @@ export default function AccountSettings() {
           )}
 
           {activeTab === "biometric" && (
-            <div className="bg-white rounded-xl border border-gray-200 p-6">
+            <div className="bg-surface rounded-xl border border-gray-200 p-6">
               <h2 className="text-sm font-semibold text-gray-900 mb-2">Biometric Login</h2>
               <p className="text-sm text-gray-500 mb-5">
                 Use your device's fingerprint or Face ID to sign in faster. This is optional — you can always use your password instead.

@@ -120,7 +120,7 @@ export default function AttendanceOverviewSection() {
 
       {/* All Cohorts tab */}
       {tab === "all" && (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+        <div className="bg-surface rounded-xl border border-gray-200 shadow-sm">
           {loadingOverview ? (
             <div className="p-6 text-sm text-gray-400 animate-pulse">Loading…</div>
           ) : overviewRows.length === 0 ? (
@@ -171,7 +171,7 @@ export default function AttendanceOverviewSection() {
           </div>
 
           {selectedCohortId && (
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+            <div className="bg-surface rounded-xl border border-gray-200 shadow-sm">
               <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
                 <span className="text-sm font-medium text-gray-700">{selectedCohortName}</span>
                 {students.length > 0 && (

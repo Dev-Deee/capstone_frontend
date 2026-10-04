@@ -32,7 +32,7 @@ export default function StartForm({ align = "left" }: { align?: "left" | "center
           id={`start-${align}`}
           value={name} onChange={(e) => setName(e.target.value)}
           placeholder="Your institution's name"
-          className="h-12 flex-1 rounded-xl border border-gray-300 bg-white px-4 text-[15px] text-gray-900 placeholder:text-gray-400 shadow-sm transition-colors focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-600/15"
+          className="h-12 flex-1 rounded-xl border border-gray-300 bg-surface px-4 text-[15px] text-gray-900 placeholder:text-gray-400 shadow-sm transition-colors focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-600/15"
         />
         <button
           type="submit"

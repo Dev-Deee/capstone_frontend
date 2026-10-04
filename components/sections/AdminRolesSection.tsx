@@ -1,11 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { adminRoleApi } from "@/lib/api";
+import ListToolbar from "@/components/ui/ListToolbar";
+import RowMenu from "@/components/ui/RowMenu";
+import { Table, Td, Th, Tr } from "@/components/ui/Table";
 
 const AVAILABLE_PERMISSIONS = [
   "MANAGE_COHORTS", "MANAGE_SUBJECTS", "MANAGE_FACILITATOR_ASSIGNMENTS",
-  "MANAGE_INVITE_CODES", "MANAGE_RESUMPTION_CODES", "VIEW_FEEDBACK",
+  "MANAGE_INVITE_CODES", "MANAGE_ENROLLMENTS", "MANAGE_RESUMPTION_CODES", "VIEW_FEEDBACK",
   "MANAGE_USERS", "VIEW_INSTITUTION_ANALYTICS",
 ];
 
@@ -25,6 +28,11 @@ export default function AdminRolesSection() {
   const [editDescription, setEditDescription] = useState("");
   const [editPermissions, setEditPermissions] = useState<string[]>([]);
   const [editIsActive, setEditIsActive] = useState(true);
+  const [creating, setCreating] = useState(false);
+  const [search, setSearch] = useState("");
+  const q = search.trim().toLowerCase();
+  const visible = roles.filter((r) => !q || [r.name, r.description, ...(r.permissions || []).map(formatPermission)]
+    .some((v: string | null) => v?.toLowerCase().includes(q)));
 
   function loadRoles() {
     adminRoleApi.getAll().then(setRoles).catch(() => {});
@@ -44,6 +52,7 @@ export default function AdminRolesSection() {
       setRoles((prev) => [...prev, role]);
       setMessage({ type: "success", text: `Admin role "${name}" created.` });
       setName(""); setDescription(""); setSelectedPermissions([]);
+      setCreating(false);
     } catch (err) {
       setMessage({ type: "error", text: err instanceof Error ? err.message : "Failed to create role" });
     }
@@ -85,9 +94,25 @@ export default function AdminRolesSection() {
         </div>
       )}
 
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-        <div className="p-6 border-b border-gray-100">
-          <h2 className="text-sm font-semibold text-gray-700 mb-4">Create Admin Role</h2>
+      <div className="rounded-2xl border border-gray-200 bg-surface shadow-sm">
+        <ListToolbar
+          count={visible.length}
+          noun={visible.length === 1 ? "admin role" : "admin roles"}
+          search={search}
+          onSearch={setSearch}
+          searchPlaceholder="Role or permission…"
+        >
+          <button
+            type="button"
+            onClick={() => setCreating((c) => !c)}
+            className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
+          >
+            {creating ? "Close" : "New role"}
+          </button>
+        </ListToolbar>
+
+        {creating && (
+          <div className="border-b border-gray-100 bg-gray-50 px-4 py-4">
           <form onSubmit={handleCreate} className="space-y-3 max-w-lg">
             <input
               type="text" required placeholder="Role name (e.g. Community Manager)"
@@ -115,17 +140,51 @@ export default function AdminRolesSection() {
               Create Role
             </button>
           </form>
-        </div>
+          </div>
+        )}
 
-        <div className="p-6">
-          <h2 className="text-sm font-semibold text-gray-700 mb-3">Existing Roles</h2>
-          {roles.length === 0 ? (
-            <p className="text-sm text-gray-400">No admin roles yet.</p>
-          ) : (
-            <ul className="divide-y divide-gray-100">
-              {roles.map((r) => (
-                <li key={r.publicId} className="py-3">
-                  {editingId === r.publicId ? (
+        {roles.length === 0 ? (
+          <p className="p-6 text-sm text-gray-400">No admin roles yet — a role is a named set of permissions you can give admins.</p>
+        ) : visible.length === 0 ? (
+          <p className="p-6 text-sm text-gray-400">No roles match.</p>
+        ) : (
+          <Table>
+            <thead>
+              <tr>
+                <Th>Role</Th>
+                <Th className="hidden md:table-cell">Permissions</Th>
+                <Th>Status</Th>
+                <Th align="right"><span className="sr-only">Actions</span></Th>
+              </tr>
+            </thead>
+            <tbody>
+              {visible.map((r) => (
+                <Fragment key={r.publicId}>
+                  <Tr muted={!r.isActive}>
+                    <Td>
+                      <p className="font-medium text-gray-900">{r.name}</p>
+                      {r.description && <p className="text-xs text-gray-400">{r.description}</p>}
+                    </Td>
+                    <Td className="hidden md:table-cell">
+                      <div className="flex flex-wrap gap-1">
+                        {(r.permissions || []).map((perm: string) => (
+                          <span key={perm} className="rounded-md bg-gray-100 px-1.5 py-0.5 text-[11px] text-gray-600">{formatPermission(perm)}</span>
+                        ))}
+                      </div>
+                    </Td>
+                    <Td>
+                      <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${r.isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
+                        {r.isActive ? "Active" : "Inactive"}
+                      </span>
+                    </Td>
+                    <Td align="right">
+                      <RowMenu label={`Actions for ${r.name}`} items={[{ label: "Edit role", onSelect: () => startEdit(r) }]} />
+                    </Td>
+                  </Tr>
+                  {editingId === r.publicId && (
+                    <tr>
+                      <td colSpan={4} className="px-4 pb-4">
+                        <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
                     <form onSubmit={handleSaveEdit} className="space-y-3 max-w-lg">
                       <input
                         type="text" required value={editName}
@@ -162,25 +221,15 @@ export default function AdminRolesSection() {
                         </button>
                       </div>
                     </form>
-                  ) : (
-                    <div className="flex items-center justify-between text-sm">
-                      <div>
-                        <p className="text-gray-900 font-medium">{r.name}</p>
-                        <p className="text-xs text-gray-400 mt-0.5">{(r.permissions || []).join(", ")}</p>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${r.isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
-                          {r.isActive ? "Active" : "Inactive"}
-                        </span>
-                        <button onClick={() => startEdit(r)} className="text-blue-600 hover:underline text-xs">Edit</button>
-                      </div>
-                    </div>
+                        </div>
+                      </td>
+                    </tr>
                   )}
-                </li>
+                </Fragment>
               ))}
-            </ul>
-          )}
-        </div>
+            </tbody>
+          </Table>
+        )}
       </div>
     </div>
   );

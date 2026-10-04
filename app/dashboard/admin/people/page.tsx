@@ -11,7 +11,7 @@ export default function AdminPeoplePage() {
       title="People"
       description="Manage accounts, invite students and assign facilitators to their cohorts."
       tabs={[
-        { id: "users", label: "Users", content: <UsersSection /> },
+        { id: "users", label: "Users", content: <UsersSection detailHref={(id) => `/dashboard/admin/people/${id}`} /> },
         { id: "invites", label: "Student Invites", content: <StudentInvitesSection /> },
         { id: "facilitators", label: "Facilitator Assignments", content: <FacilitatorAssignmentsSection /> },
       ]}
