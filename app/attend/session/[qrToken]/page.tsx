@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { sessionApi, attendanceApi, getAccessToken } from "@/lib/api";
+import type { CheckInRecord } from "@/lib/api";
+import BiometricCheckIn from "@/components/BiometricCheckIn";
 
 export default function AttendSessionPage() {
   const params = useParams();
@@ -21,13 +23,15 @@ export default function AttendSessionPage() {
   const [code, setCode] = useState("");
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // Set while the code is accepted but fingerprint / Face ID isn't confirmed yet.
+  const [pending, setPending] = useState<CheckInRecord | null>(null);
 
   useEffect(() => {
     // Redirect to login if not authenticated — use redirect param so the
     // student lands back here after signing in.
     const token = getAccessToken();
     if (!token) {
-      router.replace(`/login?redirect=/attend/session/${qrToken}`);
+      router.replace(`/login?next=${encodeURIComponent(`/attend/session/${qrToken}`)}`);
       return;
     }
 
@@ -43,9 +47,13 @@ export default function AttendSessionPage() {
     setMessage(null);
     setIsSubmitting(true);
     try {
-      await attendanceApi.mark(code);
-      setMessage({ type: "success", text: "Attendance marked successfully." });
+      const record = await attendanceApi.mark(code);
       setCode("");
+      if (record?.status === "PENDING_BIOMETRIC") {
+        setPending(record);
+      } else {
+        setMessage({ type: "success", text: "Attendance marked successfully." });
+      }
     } catch (err) {
       setMessage({
         type: "error",
@@ -98,26 +106,38 @@ export default function AttendSessionPage() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <div>
-            <label className="block text-xs text-gray-500 mb-1">Session code</label>
-            <input
-              type="text"
-              required
-              placeholder="Enter the code shown on screen"
-              value={code}
-              onChange={(e) => setCode(e.target.value.toUpperCase())}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full bg-blue-600 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50"
-          >
-            {isSubmitting ? "Marking…" : "Mark Present"}
-          </button>
-        </form>
+        {pending ? (
+          <BiometricCheckIn
+            record={pending}
+            reissue={attendanceApi.biometricChallenge}
+            confirm={attendanceApi.confirmBiometric}
+            onDone={() => {
+              setPending(null);
+              setMessage({ type: "success", text: "Attendance marked successfully." });
+            }}
+          />
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-3">
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Session code</label>
+              <input
+                type="text"
+                required
+                placeholder="Enter the code shown on screen"
+                value={code}
+                onChange={(e) => setCode(e.target.value.toUpperCase())}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full bg-blue-600 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50"
+            >
+              {isSubmitting ? "Marking…" : "Mark Present"}
+            </button>
+          </form>
+        )}
       </div>
     </div>
   );

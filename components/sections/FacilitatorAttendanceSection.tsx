@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { sessionApi, facilitatorCohortApi, cohortApi, subjectApi } from "@/lib/api";
+import AttendanceStatusBadge, { countsAsAttended } from "@/components/AttendanceStatusBadge";
+import OverrideAttendance from "@/components/OverrideAttendance";
 
 export default function FacilitatorAttendanceSection() {
   const [assignments, setAssignments] = useState<any[]>([]);
@@ -71,8 +73,14 @@ export default function FacilitatorAttendanceSection() {
     }
   }
 
-  const presentCount = roster.filter((r) => r.status !== "ABSENT").length;
+  const presentCount = roster.filter((r) => countsAsAttended(r.status)).length;
   const absentCount = roster.filter((r) => r.status === "ABSENT").length;
+  const pendingCount = roster.filter((r) => r.status === "PENDING_BIOMETRIC").length;
+
+  async function override(studentPublicId: string, status: string, reason: string) {
+    await sessionApi.overrideAttendance(selectedSession.publicId, studentPublicId, { status, reason });
+    setRoster(await sessionApi.getAttendance(selectedSession.publicId));
+  }
 
   if (isLoading) {
     return <div className="flex items-center justify-center h-64 text-gray-400 text-sm">Loading…</div>;
@@ -156,7 +164,7 @@ export default function FacilitatorAttendanceSection() {
             <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Roster</h2>
             {roster.length > 0 && (
               <span className="text-xs text-gray-400">
-                {presentCount} present · {absentCount} absent
+                {presentCount} present · {absentCount} absent{pendingCount > 0 && ` · ${pendingCount} awaiting biometric`}
               </span>
             )}
           </div>
@@ -169,21 +177,23 @@ export default function FacilitatorAttendanceSection() {
           ) : (
             <ul className="divide-y divide-gray-100">
               {roster.map((r) => (
-                <li key={r.studentPublicId} className="flex items-center justify-between py-2">
-                  <span className="text-sm text-gray-800">{r.studentName}</span>
-                  <div className="flex items-center gap-2 shrink-0">
-                    {r.markedAt && (
-                      <span className="text-xs text-gray-400">
-                        {new Date(r.markedAt).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}
-                      </span>
-                    )}
-                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                      r.status === "ABSENT"
-                        ? "bg-gray-100 text-gray-500"
-                        : "bg-green-100 text-green-700"
-                    }`}>
-                      {r.status === "ABSENT" ? "Absent" : "Present"}
-                    </span>
+                <li key={r.studentPublicId} className="py-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="text-sm text-gray-800 min-w-0">{r.studentName}</span>
+                    <div className="flex flex-wrap items-center justify-end gap-x-2 gap-y-1">
+                      {r.markedAt && (
+                        <span className="text-xs text-gray-400">
+                          {new Date(r.markedAt).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}
+                        </span>
+                      )}
+                      <AttendanceStatusBadge status={r.status} />
+                    </div>
+                  </div>
+                  <div className="flex justify-end">
+                    <OverrideAttendance
+                      current={r.status}
+                      onSave={(status, reason) => override(r.studentPublicId, status, reason)}
+                    />
                   </div>
                 </li>
               ))}

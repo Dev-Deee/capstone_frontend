@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { studentAttendanceApi } from "@/lib/api";
 import TabBar from "@/components/TabBar";
+import StatusBadge from "@/components/AttendanceStatusBadge";
 
 interface Summary {
   totalDays: number;
@@ -37,19 +38,6 @@ function StatCard({ label, value, sub }: { label: string; value: string | number
       {sub && <span className="text-xs text-gray-400">{sub}</span>}
     </div>
   );
-}
-
-// PRESENT / LATE / ABSENT from records (incl. manual overrides); OPEN = class still running.
-const STATUS_STYLE: Record<string, [string, string]> = {
-  PRESENT: ["Present", "bg-green-100 text-green-700"],
-  LATE: ["Late", "bg-amber-100 text-amber-700"],
-  ABSENT: ["Absent", "bg-gray-100 text-gray-500"],
-  OPEN: ["Open now", "bg-blue-100 text-blue-700"],
-};
-
-function StatusBadge({ status }: { status: string }) {
-  const [label, cls] = STATUS_STYLE[status] ?? [status, "bg-gray-100 text-gray-500"];
-  return <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${cls}`}>{label}</span>;
 }
 
 const formatDate = (d: string) =>

@@ -312,11 +312,30 @@ export const sessionApi = {
     request<any[]>(`/api/sessions?cohortPublicId=${cohortPublicId}&subjectPublicId=${subjectPublicId}`),
   getAttendance: (publicId: string) =>
     request<any[]>(`/api/sessions/${publicId}/attendance`),
+  overrideAttendance: (publicId: string, studentPublicId: string, body: OverrideRequest) =>
+    request<any>(`/api/sessions/${publicId}/attendance/${studentPublicId}`, {
+      method: "PUT",
+      body: JSON.stringify(body),
+    }),
 };
+
+// A check-in: when status is PENDING_BIOMETRIC, `biometric` carries the
+// challenge for the fingerprint / Face ID step (PRD Section 6.12).
+export interface BiometricChallenge { challenge: string; rpId: string; credentialIds: string[] }
+export interface CheckInRecord { publicId: string; status: string; biometric: BiometricChallenge | null }
+export interface CheckInAssertion { credentialId: string; authenticatorData: string; clientDataJSON: string; signature: string }
+export interface OverrideRequest { status: string; reason: string }
 
 export const attendanceApi = {
   mark: (sessionCode: string) =>
-    request<any>("/api/attendance", { method: "POST", body: JSON.stringify({ sessionCode }) }),
+    request<CheckInRecord>("/api/attendance", { method: "POST", body: JSON.stringify({ sessionCode }) }),
+  biometricChallenge: (recordPublicId: string) =>
+    request<BiometricChallenge>(`/api/attendance/${recordPublicId}/biometric/challenge`, { method: "POST" }),
+  confirmBiometric: (recordPublicId: string, assertion: CheckInAssertion) =>
+    request<CheckInRecord>(`/api/attendance/${recordPublicId}/biometric`, {
+      method: "POST",
+      body: JSON.stringify(assertion),
+    }),
 };
 
 export const studentAttendanceApi = {
@@ -352,9 +371,16 @@ export const resumptionApi = {
       body: JSON.stringify({ newExpiresAt }),
     }),
   markAttendance: (resumptionCode: string) =>
-    request<any>("/api/resumption-attendance", {
+    request<CheckInRecord>("/api/resumption-attendance", {
       method: "POST",
       body: JSON.stringify({ resumptionCode }),
+    }),
+  biometricChallenge: (recordPublicId: string) =>
+    request<BiometricChallenge>(`/api/resumption-attendance/${recordPublicId}/biometric/challenge`, { method: "POST" }),
+  confirmBiometric: (recordPublicId: string, assertion: CheckInAssertion) =>
+    request<CheckInRecord>(`/api/resumption-attendance/${recordPublicId}/biometric`, {
+      method: "POST",
+      body: JSON.stringify(assertion),
     }),
   getCurrentCode: (publicId: string) =>
     request<{ code: string; secondsRemaining: number }>(`/api/resumption-sessions/${publicId}/current-code`),
@@ -362,6 +388,11 @@ export const resumptionApi = {
     request<any[]>(`/api/resumption-sessions?cohortPublicId=${cohortPublicId}`),
   getAttendance: (publicId: string) =>
     request<any[]>(`/api/resumption-sessions/${publicId}/attendance`),
+  overrideAttendance: (publicId: string, studentPublicId: string, body: OverrideRequest) =>
+    request<any>(`/api/resumption-sessions/${publicId}/attendance/${studentPublicId}`, {
+      method: "PUT",
+      body: JSON.stringify(body),
+    }),
 };
 
 // --- Admin Attendance Reporting ---

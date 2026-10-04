@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { resumptionApi, cohortApi } from "@/lib/api";
+import AttendanceStatusBadge, { countsAsAttended } from "@/components/AttendanceStatusBadge";
+import OverrideAttendance from "@/components/OverrideAttendance";
 
 export default function ResumptionHistorySection() {
   const [cohorts, setCohorts] = useState<any[]>([]);
@@ -59,8 +61,13 @@ export default function ResumptionHistorySection() {
     }
   }
 
-  const presentCount = roster.filter((r) => r.status !== "ABSENT").length;
+  const presentCount = roster.filter((r) => countsAsAttended(r.status)).length;
   const absentCount = roster.filter((r) => r.status === "ABSENT").length;
+
+  async function override(studentPublicId: string, status: string, reason: string) {
+    await resumptionApi.overrideAttendance(selectedSession.publicId, studentPublicId, { status, reason });
+    setRoster(await resumptionApi.getAttendance(selectedSession.publicId));
+  }
 
   if (isLoading) {
     return <div className="flex items-center justify-center h-64 text-gray-400 text-sm">Loading…</div>;
@@ -156,13 +163,11 @@ export default function ResumptionHistorySection() {
                   <tr key={r.studentPublicId}>
                     <td className="py-2 text-gray-800">{r.studentName}</td>
                     <td className="py-2">
-                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                        r.status === "ABSENT"
-                          ? "bg-gray-100 text-gray-500"
-                          : "bg-green-100 text-green-700"
-                      }`}>
-                        {r.status === "ABSENT" ? "Absent" : "Present"}
-                      </span>
+                      <AttendanceStatusBadge status={r.status} />
+                      <OverrideAttendance
+                        current={r.status}
+                        onSave={(status, reason) => override(r.studentPublicId, status, reason)}
+                      />
                     </td>
                     <td className="py-2 text-gray-400 text-xs">
                       {r.markedAt
@@ -170,7 +175,7 @@ export default function ResumptionHistorySection() {
                         : "—"}
                     </td>
                     <td className="py-2 text-right">
-                      {r.status !== "ABSENT" && (
+                      {countsAsAttended(r.status) && (
                         <span className="text-xs text-gray-400 space-x-1">
                           {r.matchedInstitutionNetwork === true && <span title="On network">🌐</span>}
                           {r.webAuthnVerified === true && <span title="WebAuthn">🔑</span>}
