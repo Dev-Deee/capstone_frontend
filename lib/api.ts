@@ -525,3 +525,24 @@ export const extensionRequestApi = {
         method: "PATCH", body: JSON.stringify({ approve, reviewNote }),
       }),
 };
+
+// --- Notifications (polled; scoped to the current institution) ---
+export interface AppNotification {
+  publicId: string;
+  type: string;
+  title: string;
+  body: string;
+  linkRoute: string | null;
+  linkPublicId: string | null;
+  read: boolean;
+  createdAt: string;
+}
+
+export const notificationApi = {
+  list: (page = 0, size = 20) =>
+    request<{ items: AppNotification[]; page: number; size: number; total: number; hasMore: boolean }>(
+      `/api/notifications?page=${page}&size=${size}`),
+  unreadCount: () => request<{ count: number }>("/api/notifications/unread-count"),
+  markRead: (publicId: string) => request<AppNotification>(`/api/notifications/${publicId}/read`, { method: "PATCH" }),
+  markAllRead: () => request<{ updated: number }>("/api/notifications/read-all", { method: "POST" }),
+};
