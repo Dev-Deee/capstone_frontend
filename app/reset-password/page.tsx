@@ -3,6 +3,8 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { authApi } from "@/lib/api";
+import PasswordChecklist from "@/components/PasswordChecklist";
+import { passwordError } from "@/lib/validation";
 
 function ResetPasswordForm() {
   const searchParams = useSearchParams();
@@ -26,6 +28,8 @@ function ResetPasswordForm() {
     e.preventDefault();
     if (!token) return;
     setError(null);
+    const invalid = passwordError(password);
+    if (invalid) { setError(invalid); return; }
     setIsSubmitting(true);
     try {
       await authApi.resetPassword(token, password);
@@ -65,6 +69,8 @@ function ResetPasswordForm() {
                 type={showPassword ? "text" : "password"}
                 required
                 placeholder="New password"
+                autoComplete="new-password"
+                maxLength={128}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full px-3 py-2 pr-16 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
@@ -78,6 +84,7 @@ function ResetPasswordForm() {
                 {showPassword ? "Hide" : "Show"}
               </button>
             </div>
+            <PasswordChecklist password={password} />
 
             {error && (
               <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-md px-3 py-2">

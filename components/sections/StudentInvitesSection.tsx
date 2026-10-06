@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { cohortApi } from "@/lib/api";
 import RowMenu from "@/components/ui/RowMenu";
 import { Table, Td, Th, Tr } from "@/components/ui/Table";
+import { EMAIL_RE, PHONE_RE, normalizePhone } from "@/lib/validation";
 
 type InviteCode = {
   publicId: string;
@@ -23,6 +24,12 @@ const inputClass =
 // Splits a pasted list on commas, semicolons, whitespace or new lines.
 function splitList(raw: string): string[] {
   return raw.split(/[\s,;]+/).map((v) => v.trim()).filter(Boolean);
+}
+
+// Phones are often typed with spaces ("+234 801 234 5678"), so they're split
+// on new lines, commas and semicolons only, then normalised.
+function splitPhones(raw: string): string[] {
+  return raw.split(/[\n,;]+/).map(normalizePhone).filter(Boolean);
 }
 
 function signupLink(code: string) {
@@ -109,9 +116,20 @@ export default function StudentInvitesSection() {
     e.preventDefault();
     if (!sharing) return;
     const emailList = splitList(emails);
-    const phoneList = splitList(phones);
+    const phoneList = splitPhones(phones);
     if (emailList.length === 0 && phoneList.length === 0) {
       setMessage({ type: "error", text: "Add at least one email address or phone number." });
+      return;
+    }
+    const badEmail = emailList.find((v) => !EMAIL_RE.test(v));
+    const badPhone = phoneList.find((v) => !PHONE_RE.test(v));
+    if (badEmail || badPhone) {
+      setMessage({
+        type: "error",
+        text: badEmail
+          ? `"${badEmail}" isn't a valid email address.`
+          : `"${badPhone}" isn't a valid phone number — use +2348012345678 or 08012345678.`,
+      });
       return;
     }
     setMessage(null);

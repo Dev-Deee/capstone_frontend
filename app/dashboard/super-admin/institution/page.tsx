@@ -28,7 +28,7 @@ export default function InstitutionPage() {
           <dl className="space-y-4">
             {[
               { label: "Name", value: institution.name },
-              { label: "Web address", value: `cadence / ${institution.slug}` },
+              { label: "Handle", value: institution.slug },
               { label: "Postal address", value: institution.address || "—" },
               { label: "Guardian Linkage Mode", value: institution.guardianLinkageMode },
               { label: "Created", value: new Date(institution.createdAt).toLocaleDateString() },

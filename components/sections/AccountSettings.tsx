@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { userApi, authApi } from "@/lib/api";
 import { registerBiometric } from "@/lib/webauthn";
+import PasswordChecklist from "@/components/PasswordChecklist";
+import { passwordError } from "@/lib/validation";
 import ActiveDevices from "@/components/ActiveDevices";
 import PageHeader from "@/components/PageHeader";
 
@@ -34,6 +36,8 @@ export default function AccountSettings() {
   async function handleChangePassword(e: React.FormEvent) {
     e.preventDefault();
     setMessage(null);
+    const invalid = passwordError(newPassword);
+    if (invalid) { setMessage({ type: "error", text: invalid }); return; }
     setIsChanging(true);
     try {
       await authApi.changePassword(currentPassword, newPassword);
@@ -292,10 +296,13 @@ export default function AccountSettings() {
                   <input
                     type="password"
                     required
+                    autoComplete="new-password"
+                    maxLength={128}
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
+                  <PasswordChecklist password={newPassword} />
                 </div>
                 <button
                   type="submit"

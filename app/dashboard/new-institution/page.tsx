@@ -49,12 +49,9 @@ export default function NewInstitutionPage() {
             className="h-11 w-full rounded-lg border border-gray-300 px-3.5 text-[15px] focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-600/15" />
         </div>
         <div>
-          <label htmlFor="s" className="mb-1.5 block text-sm font-medium text-gray-700">Address</label>
-          <div className="flex overflow-hidden rounded-lg border border-gray-300 focus-within:border-blue-600 focus-within:ring-4 focus-within:ring-blue-600/15">
-            <span className="flex items-center border-r border-gray-200 bg-gray-50 px-3 text-[15px] text-gray-500">cadence /</span>
-            <input id="s" required value={slug} onChange={(e) => { setSlug(e.target.value.toLowerCase()); setEdited(true); }}
-              className="h-11 flex-1 px-3 font-mono text-[15px] focus:outline-none" />
-          </div>
+          <label htmlFor="s" className="mb-1.5 block text-sm font-medium text-gray-700">Institution handle</label>
+          <input id="s" required value={slug} onChange={(e) => { setSlug(e.target.value.toLowerCase()); setEdited(true); }}
+            className="h-11 w-full rounded-lg border border-gray-300 bg-surface px-3.5 font-mono text-[15px] focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-600/15" />
           {hint && (
             <p className={`mt-1.5 text-sm ${hint.ok ? "text-green-700" : "text-red-700"}`} aria-live="polite">
               {hint.ok ? "✓ " : ""}{hint.text}

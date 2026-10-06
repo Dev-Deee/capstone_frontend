@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { cohortApi, staffInviteApi, adminRoleApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
+import { emailError, normalizePhone, phoneError } from "@/lib/validation";
 
 export default function StaffInvitesSection() {
   const [cohorts, setCohorts] = useState<any[]>([]);
@@ -27,10 +28,13 @@ export default function StaffInvitesSection() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setMessage(null);
+    // Phone is optional here (an existing Cadence account doesn't need one); the server says when it's required.
+    const invalid = emailError(email) ?? phoneError(phoneNumber, false);
+    if (invalid) { setMessage({ type: "error", text: invalid }); return; }
     try {
       await staffInviteApi.create({
-        firstName: firstName || undefined, lastName: lastName || undefined, email,
-        phoneNumber: phoneNumber || undefined, targetRole,
+        firstName: firstName || undefined, lastName: lastName || undefined, email: email.trim(),
+        phoneNumber: normalizePhone(phoneNumber) || undefined, targetRole,
         adminRolePublicId: targetRole === "ADMIN" ? adminRoleId : undefined,
         cohortPublicId: (targetRole === "ADMIN" || targetRole === "STUDENT") && cohortId ? cohortId : undefined,
       });
@@ -72,7 +76,7 @@ export default function StaffInvitesSection() {
             className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <input
-            type="text" placeholder="Phone number"
+            type="tel" placeholder="Phone number, e.g. 08012345678 or +2348012345678"
             value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)}
             className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
