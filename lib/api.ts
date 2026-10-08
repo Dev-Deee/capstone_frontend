@@ -546,3 +546,22 @@ export const notificationApi = {
   markRead: (publicId: string) => request<AppNotification>(`/api/notifications/${publicId}/read`, { method: "PATCH" }),
   markAllRead: () => request<{ updated: number }>("/api/notifications/read-all", { method: "POST" }),
 };
+
+// --- Platform console (platform admins only) ---
+export interface PlatformOverview {
+  institutions: number; active: number; pending: number; suspended: number;
+  newLast30Days: number; users: number; memberships: number;
+}
+export interface PlatformInstitution {
+  publicId: string; name: string; slug: string; status: "ACTIVE" | "PENDING" | "SUSPENDED";
+  createdAt: string; members: number; ownerName: string | null; ownerEmail: string | null;
+}
+export const platformApi = {
+  overview: () => request<PlatformOverview>("/api/platform/overview"),
+  institutions: () => request<PlatformInstitution[]>("/api/platform/institutions"),
+  changeStatus: (publicId: string, status: PlatformInstitution["status"], reason: string) =>
+    request<PlatformInstitution>(`/api/platform/institutions/${publicId}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ status, reason }),
+    }),
+};

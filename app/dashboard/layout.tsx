@@ -10,7 +10,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 import NotificationBell from "@/components/notifications/NotificationBell";
 import { useUnreadCount } from "@/components/notifications/useUnreadCount";
 
-type IconName = "home" | "book" | "settings" | "people" | "calendar" | "building" | "layers" | "mail" | "classes" | "chart";
+type IconName = "home" | "book" | "settings" | "people" | "calendar" | "building" | "layers" | "mail" | "classes" | "chart" | "globe";
 
 interface NavItem {
   href: string;
@@ -38,7 +38,7 @@ const NAV_BY_ROLE: Record<string, NavItem[]> = {
     { href: "/dashboard/admin/attendance", label: "Attendance", icon: "calendar" },
   ],
   PLATFORM: [
-    { href: "/dashboard/platform", label: "Institutions", icon: "building" },
+    { href: "/dashboard/platform", label: "Platform", icon: "globe" },
   ],
   SUPER_ADMIN: [
     { href: "/dashboard/super-admin", label: "Home", icon: "home" },
@@ -88,6 +88,7 @@ const ICON_PATHS: Record<IconName, React.ReactNode> = {
   mail: <><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3.5 6.5 8.5 6 8.5-6" /></>,
   classes: <><rect x="3" y="4" width="18" height="12" rx="2" /><path d="M8 20h8M12 16v4" /></>,
   chart: <><path d="M3 3v18h18" /><path d="M7 15v2M11 11v6M15 7v10M19 12v5" /></>,
+  globe: <><circle cx="12" cy="12" r="9" /><path d="M3 12h18" /><path d="M12 3a14 14 0 0 1 0 18a14 14 0 0 1 0-18" /></>,
 };
 
 function Icon({ name }: { name: IconName }) {
@@ -138,7 +139,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   const role = highestRole(roles, platformAdmin);
-  const navItems = NAV_BY_ROLE[role] || [];
+  // A platform admin also runs the platform console, whatever their role in
+  // the institution they're working in.
+  const navItems = [
+    ...(NAV_BY_ROLE[role] || []),
+    ...(platformAdmin && role !== "PLATFORM" ? [{ href: "/dashboard/platform", label: "Platform", icon: "globe" as IconName }] : []),
+  ];
   // Longest matching href wins, so sub-pages (e.g. a cohort's detail page)
   // highlight their parent without "/dashboard/student" swallowing every student page.
   const activeHref = navItems
