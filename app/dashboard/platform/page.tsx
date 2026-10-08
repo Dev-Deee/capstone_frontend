@@ -20,7 +20,7 @@ const STATUS: Record<Status, [string, string]> = {
   SUSPENDED: ["Suspended", "bg-red-100 text-red-700"],
 };
 
-const VERB: Record<Status, string> = { ACTIVE: "Reactivate", PENDING: "Mark pending", SUSPENDED: "Suspend" };
+const VERB: Record<Status, string> = { ACTIVE: "Activate", PENDING: "Mark pending", SUSPENDED: "Suspend" };
 const EFFECT: Record<Status, string> = {
   ACTIVE: "Members can sign in and use it again.",
   PENDING: "Members are locked out until it's activated.",
@@ -30,15 +30,15 @@ const EFFECT: Record<Status, string> = {
 const fmtDate = (d: string) => new Date(d).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
 
 // The platform console (platform admins only — the API refuses everyone else):
-// every institution on Cadence, its owner and size, entering one (audited),
-// and changing its status (with a reason, audited).
+// every institution on Cadence, its owner and size, and changing its status
+// (with a reason, audited). Oversight only: a platform admin can't enter an
+// institution or see anything inside it.
 export default function PlatformPage() {
-  const { platformAdmin, switchInstitution, institutionPublicId } = useAuth();
+  const { platformAdmin } = useAuth();
   const [overview, setOverview] = useState<PlatformOverview | null>(null);
   const [list, setList] = useState<PlatformInstitution[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-  const [busyId, setBusyId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<Filter>("ALL");
   const [change, setChange] = useState<Change>(null);
@@ -61,16 +61,6 @@ export default function PlatformPage() {
   const matching = list.filter((i) => !q || [i.name, i.slug, i.ownerName, i.ownerEmail].some((v) => v?.toLowerCase().includes(q)));
   const visible = matching.filter((i) => filter === "ALL" || i.status === filter);
 
-  async function enter(i: PlatformInstitution) {
-    setBusyId(i.publicId);
-    try {
-      await switchInstitution(i.publicId);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Couldn't enter");
-      setBusyId(null);
-    }
-  }
-
   async function saveChange(i: PlatformInstitution) {
     if (!change || !reason.trim()) return;
     setSaving(true);
@@ -90,22 +80,19 @@ export default function PlatformPage() {
   }
 
   function menuFor(i: PlatformInstitution): MenuItem[] {
-    const items: MenuItem[] = [];
-    if (i.publicId !== institutionPublicId) items.push({ label: "Enter institution", onSelect: () => enter(i) });
-    (["ACTIVE", "PENDING", "SUSPENDED"] as Status[])
+    return (["ACTIVE", "PENDING", "SUSPENDED"] as Status[])
       .filter((s) => s !== i.status)
-      .forEach((s) => items.push({
+      .map((s) => ({
         label: VERB[s],
         tone: s === "SUSPENDED" ? "danger" : undefined,
         onSelect: () => { setMessage(null); setReason(""); setChange({ id: i.publicId, to: s }); },
       }));
-    return items;
   }
 
   return (
     <div className="p-6 space-y-5">
       <PageHeader eyebrow="Platform" title="Platform"
-        description="Every institution on Cadence. Entering one you don't belong to gives you owner access there; status changes lock or unlock its members. Both are recorded in the audit log." />
+        description="Every institution on Cadence. You can activate, mark pending or suspend one — status changes lock or unlock its members and are recorded in the audit log. What's inside an institution stays private to its members." />
 
       {error && <div className="rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
       {message && <div className="rounded-lg border border-green-100 bg-green-50 px-3 py-2 text-sm text-green-700">{message}</div>}
@@ -165,10 +152,7 @@ export default function PlatformPage() {
                         <div className="flex min-w-0 items-center gap-3">
                           <Avatar name={i.name} />
                           <div className="min-w-0">
-                            <p className="truncate font-medium text-gray-900">
-                              {i.name}
-                              {i.publicId === institutionPublicId && <span className="ml-1.5 text-xs font-normal text-gray-400">(you're here)</span>}
-                            </p>
+                            <p className="truncate font-medium text-gray-900">{i.name}</p>
                             <p className="truncate font-mono text-xs text-gray-400">{i.slug}</p>
                           </div>
                         </div>
@@ -185,8 +169,7 @@ export default function PlatformPage() {
                       <Td className="hidden md:table-cell whitespace-nowrap text-gray-500">{fmtDate(i.createdAt)}</Td>
                       <Td><span className={`whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-medium ${cls}`}>{label}</span></Td>
                       <Td align="right">
-                        {busyId === i.publicId ? <span className="text-xs text-gray-400">Entering…</span>
-                          : <RowMenu items={menuFor(i)} label={`Actions for ${i.name}`} />}
+                        <RowMenu items={menuFor(i)} label={`Actions for ${i.name}`} />
                       </Td>
                     </Tr>
                     {changing && (
