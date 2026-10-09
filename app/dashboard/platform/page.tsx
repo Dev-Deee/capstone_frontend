@@ -22,8 +22,8 @@ const STATUS: Record<Status, [string, string]> = {
 
 const VERB: Record<Status, string> = { ACTIVE: "Activate", PENDING: "Mark pending", SUSPENDED: "Suspend" };
 const EFFECT: Record<Status, string> = {
-  ACTIVE: "Members can sign in and use it again.",
-  PENDING: "Members are locked out until it's activated.",
+  ACTIVE: "Marks it active. Members have full access.",
+  PENDING: "Flags it for review. Members keep full access.",
   SUSPENDED: "Members are locked out on their next request. Nothing is deleted.",
 };
 
@@ -92,7 +92,7 @@ export default function PlatformPage() {
   return (
     <div className="p-6 space-y-5">
       <PageHeader eyebrow="Platform" title="Platform"
-        description="Every institution on Cadence. You can activate, mark pending or suspend one — status changes lock or unlock its members and are recorded in the audit log. What's inside an institution stays private to its members." />
+        description="Every institution on Cadence. You can activate, mark pending or suspend one. Only suspending locks its members out; every change is recorded in the audit log. What's inside an institution stays private to its members." />
 
       {error && <div className="rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
       {message && <div className="rounded-lg border border-green-100 bg-green-50 px-3 py-2 text-sm text-green-700">{message}</div>}
@@ -101,7 +101,7 @@ export default function PlatformPage() {
         <Stat label="Institutions" value={overview ? String(overview.institutions) : "—"}
           hint={overview ? `${overview.newLast30Days} new in the last 30 days` : ""}
           icon={icon(<><path d="M4 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16" /><path d="M16 9h2a2 2 0 0 1 2 2v10" /><path d="M2 21h20M8 7h4M8 11h4M8 15h4" /></>)} />
-        <Stat label="Active" value={overview ? String(overview.active) : "—"} hint="Usable by their members"
+        <Stat label="Active" value={overview ? String(overview.active) : "—"} hint="Approved and in use"
           icon={icon(<><circle cx="12" cy="12" r="9" /><path d="m8 12 3 3 5-6" /></>)} />
         <Stat label="Pending or suspended" value={overview ? String(overview.pending + overview.suspended) : "—"}
           hint={overview ? `${overview.pending} pending · ${overview.suspended} suspended` : ""}
