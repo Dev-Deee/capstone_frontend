@@ -44,7 +44,7 @@ export default function StartForm({ align = "left" }: { align?: "left" | "center
       </div>
       <p className={`mt-3 min-h-5 text-sm text-gray-500 ${align === "center" ? "text-center" : ""}`}>
         {slug ? (
-          <>Your address: <span className="font-mono text-gray-800">cadence / {slug}</span></>
+          <>Your institution handle: <span className="font-mono text-gray-800">{slug}</span></>
         ) : (
           <>Takes a minute. You&rsquo;ll be its owner and can invite your team straight away.</>
         )}

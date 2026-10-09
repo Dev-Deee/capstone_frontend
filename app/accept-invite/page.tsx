@@ -6,6 +6,8 @@ import { useSearchParams } from "next/navigation";
 import { authApi, inviteApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import Logo from "@/components/marketing/Logo";
+import PasswordChecklist from "@/components/PasswordChecklist";
+import { passwordError } from "@/lib/validation";
 
 type Preview = Awaited<ReturnType<typeof inviteApi.preview>>;
 
@@ -36,7 +38,10 @@ function AcceptInviteContent() {
   // Brand-new invitee: choosing a password creates the account and signs in.
   async function setPasswordAndJoin(e: React.FormEvent) {
     e.preventDefault();
-    setError(null); setSubmitting(true);
+    setError(null);
+    const invalid = passwordError(password);
+    if (invalid) { setError(invalid); return; }
+    setSubmitting(true);
     try {
       enterSession(await authApi.acceptInvite(token!, password));
     } catch (err) {
@@ -114,13 +119,14 @@ function AcceptInviteContent() {
           <div className="relative">
             <label htmlFor="pw" className="sr-only">Password</label>
             <input id="pw" type={showPassword ? "text" : "password"} required minLength={8} autoComplete="new-password"
-              value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 8 characters" className={`${input} pr-16`} />
+              value={password} onChange={(e) => setPassword(e.target.value)} maxLength={128} className={`${input} pr-16`} />
             <button type="button" onClick={() => setShowPassword((v) => !v)} aria-pressed={showPassword}
               aria-label={showPassword ? "Hide password" : "Show password"}
               className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-md px-2.5 py-1 text-xs font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-900">
               {showPassword ? "Hide" : "Show"}
             </button>
           </div>
+          <PasswordChecklist password={password} />
           <button type="submit" disabled={submitting}
             className="inline-flex h-11 w-full items-center justify-center rounded-lg bg-blue-600 text-[15px] font-medium text-white hover:bg-blue-700 disabled:opacity-50">
             {submitting ? "Creating your account…" : "Create account and join"}

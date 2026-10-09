@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { authApi, cohortApi, userApi } from "@/lib/api";
+import { emailError, normalizePhone, phoneError } from "@/lib/validation";
 
 // The person-management forms, shared by the Users list (row menu) and a
 // person's own page. Each calls the API itself and reports back through
@@ -84,12 +85,14 @@ export function EditUserForm({ user, onSaved, onCancel }: { user: ManagedUser; o
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
-    setSaving(true);
     setError(null);
+    const invalid = emailError(form.email) ?? phoneError(form.phoneNumber, false);
+    if (invalid) { setError(invalid); return; }
+    setSaving(true);
     try {
       let updated: ManagedUser = await userApi.update(user.publicId, {
         firstName: form.firstName, middleName: form.middleName, lastName: form.lastName,
-        phoneNumber: form.phoneNumber, institutionStudentId: form.institutionStudentId,
+        phoneNumber: normalizePhone(form.phoneNumber), institutionStudentId: form.institutionStudentId,
       });
       if (emailChanged) {
         await authApi.adminChangeEmail(user.publicId, form.email.trim(), form.emailReason);
@@ -115,7 +118,7 @@ export function EditUserForm({ user, onSaved, onCancel }: { user: ManagedUser; o
       </div>
       <div className="grid gap-3 sm:grid-cols-3">
         <label className="text-xs text-gray-500">Email<input type="email" required className={`${inputClass} mt-1`} {...field("email")} /></label>
-        <label className="text-xs text-gray-500">Phone<input className={`${inputClass} mt-1`} {...field("phoneNumber")} /></label>
+        <label className="text-xs text-gray-500">Phone<input type="tel" placeholder="08012345678 or +234…" className={`${inputClass} mt-1`} {...field("phoneNumber")} /></label>
         <label className="text-xs text-gray-500">Institution student ID<input className={`${inputClass} mt-1`} {...field("institutionStudentId")} /></label>
       </div>
       {emailChanged && (

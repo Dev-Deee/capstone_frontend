@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
+import { normalizePhone } from "@/lib/validation";
 
 // What Cadence does, stated plainly — no invented metrics on the sign-in page.
 const PILLARS = [
@@ -43,7 +44,10 @@ export default function LoginPage() {
     try {
       // Return to where sign-in was asked for (e.g. an invite), if anywhere.
       const next = new URLSearchParams(window.location.search).get("next") ?? undefined;
-      await login(identifier, password, next);
+      // Not validated (existing accounts must always be able to sign in), but a
+      // phone typed with spaces or dashes still matches the stored number.
+      const id = identifier.includes("@") ? identifier.trim() : normalizePhone(identifier);
+      await login(id, password, next);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
     } finally {

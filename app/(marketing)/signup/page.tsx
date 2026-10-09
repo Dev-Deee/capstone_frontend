@@ -5,6 +5,8 @@ import Link from "next/link";
 import { institutionApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { slugify } from "@/components/marketing/StartForm";
+import PasswordChecklist from "@/components/PasswordChecklist";
+import { emailError, normalizePhone, passwordError, phoneError } from "@/lib/validation";
 
 type SlugState =
   | { kind: "idle" }
@@ -70,11 +72,13 @@ export default function SignupPage() {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    const invalid = emailError(email) ?? phoneError(phoneNumber) ?? passwordError(password);
+    if (invalid) { setError(invalid); return; }
     setSubmitting(true);
     try {
       enterSession(await institutionApi.signup({
         institutionName: name.trim(), slug, firstName: firstName.trim(), lastName: lastName.trim(),
-        email: email.trim(), phoneNumber: phoneNumber.trim(), password, consentGiven: consent,
+        email: email.trim(), phoneNumber: normalizePhone(phoneNumber), password, consentGiven: consent,
       }));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Sign-up failed");
@@ -98,7 +102,7 @@ export default function SignupPage() {
           </>
         )}
       </span>
-    ) : <span className="text-gray-400">Lowercase letters, numbers and hyphens. This can&rsquo;t be changed later.</span>;
+    ) : <span className="text-gray-400">A unique short name for your institution: lowercase letters, numbers and hyphens. It can&rsquo;t be changed later.</span>;
 
   return (
     <main className="mx-auto max-w-xl px-6 pb-24 pt-12 sm:pt-16">
@@ -119,13 +123,10 @@ export default function SignupPage() {
               placeholder="e.g. Lagos Tech Academy" className={input} />
           </div>
           <div>
-            <label htmlFor="inst-slug" className="mb-1.5 block text-sm font-medium text-gray-700">Address</label>
-            <div className="flex items-stretch overflow-hidden rounded-lg border border-gray-300 transition-colors focus-within:border-blue-600 focus-within:ring-4 focus-within:ring-blue-600/15">
-              <span className="flex items-center bg-gray-50 px-3 text-[15px] text-gray-500 border-r border-gray-200">cadence /</span>
-              <input id="inst-slug" required value={slug}
-                onChange={(e) => { setSlug(e.target.value.toLowerCase()); setSlugEdited(true); }}
-                className="h-11 flex-1 bg-surface px-3 font-mono text-[15px] text-gray-900 focus:outline-none" />
-            </div>
+            <label htmlFor="inst-slug" className="mb-1.5 block text-sm font-medium text-gray-700">Institution handle</label>
+            <input id="inst-slug" required value={slug}
+              onChange={(e) => { setSlug(e.target.value.toLowerCase()); setSlugEdited(true); }}
+              className={`${input} font-mono`} />
             <p className="mt-1.5 text-sm" aria-live="polite">{slugHint}</p>
           </div>
         </fieldset>
@@ -148,20 +149,21 @@ export default function SignupPage() {
           </div>
           <div>
             <label htmlFor="phone" className="mb-1.5 block text-sm font-medium text-gray-700">Phone number</label>
-            <input id="phone" required value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} className={input} autoComplete="tel" placeholder="+234…" />
+            <input id="phone" type="tel" required value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} className={input} autoComplete="tel" placeholder="+2348012345678 or 08012345678" />
           </div>
           <div>
             <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-gray-700">Password</label>
             <div className="relative">
-              <input id="password" type={showPassword ? "text" : "password"} required minLength={8}
+              <input id="password" type={showPassword ? "text" : "password"} required minLength={8} maxLength={128}
                 value={password} onChange={(e) => setPassword(e.target.value)} className={`${input} pr-16`}
-                autoComplete="new-password" placeholder="At least 8 characters" />
+                autoComplete="new-password" />
               <button type="button" onClick={() => setShowPassword((v) => !v)} aria-pressed={showPassword}
                 aria-label={showPassword ? "Hide password" : "Show password"}
                 className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-md px-2.5 py-1 text-xs font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-900">
                 {showPassword ? "Hide" : "Show"}
               </button>
             </div>
+            <PasswordChecklist password={password} />
           </div>
           <label className="flex items-start gap-3 text-sm text-gray-600">
             <input type="checkbox" required checked={consent} onChange={(e) => setConsent(e.target.checked)}
