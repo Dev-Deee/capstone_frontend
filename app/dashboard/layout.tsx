@@ -7,6 +7,8 @@ import { useAuth } from "@/lib/auth-context";
 import { userApi } from "@/lib/api";
 import InstitutionSwitcher from "@/components/InstitutionSwitcher";
 import ThemeToggle from "@/components/ThemeToggle";
+import NotificationBell from "@/components/notifications/NotificationBell";
+import { useUnreadCount } from "@/components/notifications/useUnreadCount";
 
 type IconName = "home" | "book" | "settings" | "people" | "calendar" | "building" | "layers" | "mail" | "classes" | "chart";
 
@@ -124,6 +126,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     userApi.getMe().then(setMe).catch(() => {});
   }, [isLoading]);
 
+  // One poller for every bell. A platform admin outside any institution has
+  // no institution to be notified in.
+  const unread = useUnreadCount(!isLoading && !(roles.length === 0 && platformAdmin));
+
   // Close the mobile drawer whenever the route changes.
   useEffect(() => { setMobileOpen(false); }, [pathname]);
 
@@ -149,6 +155,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </svg>
         </button>
         <Wordmark href={HOME_BY_ROLE[role]} />
+        <div className="ml-auto"><NotificationBell unread={unread} /></div>
       </div>
 
       {mobileOpen && (
@@ -167,6 +174,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         <div className="relative px-5 h-16 flex items-center justify-between">
           <Wordmark href={HOME_BY_ROLE[role]} />
+          <div className="hidden md:block"><NotificationBell unread={unread} /></div>
           <button onClick={() => setMobileOpen(false)} aria-label="Close menu" className="md:hidden p-1 text-blue-100 hover:text-white">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
               <path d="M18 6 6 18M6 6l12 12" />
