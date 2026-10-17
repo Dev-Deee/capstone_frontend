@@ -98,6 +98,21 @@ export interface AuthResponse {
   accessToken: string;
   refreshToken: string;
   roles: string[];
+  // Multi-tenant: the institution this session acts in (null only for a
+  // platform admin outside any institution).
+  institutionPublicId: string | null;
+  institutionName: string | null;
+  institutionSlug: string | null;
+  platformAdmin: boolean;
+}
+
+export interface MembershipSummary {
+  institutionPublicId: string;
+  institutionName: string;
+  institutionSlug: string;
+  roles: string[];
+  active: boolean;
+  current: boolean;
 }
 
 export const authApi = {
@@ -119,8 +134,13 @@ export const authApi = {
       body: JSON.stringify(data),
     }, false),
 
+  switchInstitution: (institutionPublicId: string) =>
+    request<AuthResponse>("/api/auth/switch-institution", {
+      method: "POST", body: JSON.stringify({ institutionPublicId }),
+    }),
+  // Brand-new invitee: sets a password, creates the account + membership, signs in.
   acceptInvite: (token: string, password: string) =>
-    request<void>("/api/auth/accept-invite", {
+    request<AuthResponse>("/api/auth/accept-invite", {
       method: "POST",
       body: JSON.stringify({ token, password }),
     }, false),
@@ -158,8 +178,19 @@ export const authApi = {
 // --- Users ---
 export const userApi = {
   getAll: () => request<any[]>("/api/users"),
+  getOne: (publicId: string) => request<any>(`/api/users/${publicId}`),
+  update: (publicId: string, data: {
+    firstName: string; middleName?: string; lastName: string; phoneNumber?: string; institutionStudentId?: string;
+  }) => request<any>(`/api/users/${publicId}`, { method: "PATCH", body: JSON.stringify(data) }),
+  activate: (publicId: string) => request<any>(`/api/users/${publicId}/activate`, { method: "PATCH" }),
+  deactivate: (publicId: string) => request<any>(`/api/users/${publicId}/deactivate`, { method: "PATCH" }),
+  remove: (publicId: string) => request<void>(`/api/users/${publicId}`, { method: "DELETE" }),
+  getMyStudents: () => request<any[]>("/api/users/my-students"),
   getFacilitators: () => request<any[]>("/api/users/facilitators"),
   getMe: () => request<any>("/api/users/me"),
+  updateRoles: (publicId: string, roles: string[]) =>
+    request<any>(`/api/users/${publicId}/roles`, { method: "PUT", body: JSON.stringify({ roles }) }),
+  leaveInstitution: () => request<void>("/api/users/me/leave-institution", { method: "POST" }),
   uploadProfileImage: (file: File) => {
     const formData = new FormData();
     formData.append("file", file);
@@ -177,8 +208,33 @@ export const userApi = {
 
 // --- Institutions ---
 export const institutionApi = {
+  // Platform admins only — every tenant.
   getAll: () => request<any[]>("/api/institutions"),
   getOne: (publicId: string) => request<any>(`/api/institutions/${publicId}`),
+  current: () => request<any>("/api/institutions/current"),
+  mine: () => request<MembershipSummary[]>("/api/institutions/mine"),
+  // A signed-in user founds another institution (session switches into it).
+  found: (data: { name: string; slug: string }) =>
+    request<AuthResponse>("/api/institutions", { method: "POST", body: JSON.stringify(data) }),
+  // Public self-serve sign-up: new person + new institution.
+  signup: (data: {
+    institutionName: string; slug: string; firstName: string; lastName: string;
+    email: string; phoneNumber: string; password: string; consentGiven: boolean;
+  }) => request<AuthResponse>("/api/institutions/signup", { method: "POST", body: JSON.stringify(data) }, false),
+  slugAvailability: (slug: string) =>
+    request<{ slug: string; available: boolean; reason: string | null; suggestion: string | null }>(
+      `/api/institutions/slug-availability?slug=${encodeURIComponent(slug)}`, {}, false),
+};
+
+export const inviteApi = {
+  // Public: what the invite is for and whether the invitee already has an account.
+  preview: (token: string) => request<{
+    institutionName: string; institutionSlug: string; role: string; email: string;
+    firstName: string | null; accountExists: boolean;
+  }>(`/api/invites/${encodeURIComponent(token)}`, {}, false),
+  // Existing account, signed in as the invited email.
+  acceptAsMember: (token: string) =>
+    request<AuthResponse>("/api/invites/accept", { method: "POST", body: JSON.stringify({ token }) }),
 };
 
 // --- Cohorts ---
@@ -192,7 +248,16 @@ export const cohortApi = {
   createInviteCode: (data: { cohortPublicId: string; maxUses?: number; expiresInDays?: number }) =>
       request<any>("/api/cohorts/invite-codes", { method: "POST", body: JSON.stringify(data) }),
   enrollStudent: (cohortPublicId: string, studentPublicId: string) =>
-      request<void>(`/api/cohorts/${cohortPublicId}/enrollments`, { method: "POST", body: JSON.stringify({ studentPublicId }) }),
+      request<any>(`/api/cohorts/${cohortPublicId}/enrollments`, { method: "POST", body: JSON.stringify({ studentPublicId }) }),
+  listInviteCodes: (cohortPublicId: string) => request<Array<{
+    publicId: string; code: string; cohortPublicId: string; expiresAt: string | null;
+    maxUses: number; useCount: number; valid: boolean; createdAt: string;
+  }>>(`/api/cohorts/${cohortPublicId}/invite-codes`),
+  sendInviteCode: (inviteCodePublicId: string, data: { emails: string[]; phoneNumbers: string[] }) =>
+      request<{ emailsSent: number; smsSent: number }>(
+        `/api/cohorts/invite-codes/${inviteCodePublicId}/send`, { method: "POST", body: JSON.stringify(data) }),
+  join: (inviteCode: string) =>
+      request<any>("/api/cohorts/join", { method: "POST", body: JSON.stringify({ inviteCode }) }),
 };
 
 // --- Subjects ---
@@ -225,8 +290,9 @@ export const adminRoleApi = {
 // --- Staff Invites ---
 export const staffInviteApi = {
   create: (data: {
-    firstName: string; middleName?: string; lastName: string; email: string;
-    phoneNumber: string; targetRole: "FACILITATOR" | "ADMIN";
+    // Names and phone are only needed when the invitee has no Cadence account yet.
+    firstName?: string; middleName?: string; lastName?: string; email: string;
+    phoneNumber?: string; targetRole: "STUDENT" | "FACILITATOR" | "ADMIN" | "SUPER_ADMIN";
     adminRolePublicId?: string; cohortPublicId?: string;
   }) => request<void>("/api/auth/staff-invites", { method: "POST", body: JSON.stringify(data) }),
 };
@@ -247,11 +313,30 @@ export const sessionApi = {
     request<any[]>(`/api/sessions?cohortPublicId=${cohortPublicId}&subjectPublicId=${subjectPublicId}`),
   getAttendance: (publicId: string) =>
     request<any[]>(`/api/sessions/${publicId}/attendance`),
+  overrideAttendance: (publicId: string, studentPublicId: string, body: OverrideRequest) =>
+    request<any>(`/api/sessions/${publicId}/attendance/${studentPublicId}`, {
+      method: "PUT",
+      body: JSON.stringify(body),
+    }),
 };
+
+// A check-in: when status is PENDING_BIOMETRIC, `biometric` carries the
+// challenge for the fingerprint / Face ID step (PRD Section 6.12).
+export interface BiometricChallenge { challenge: string; rpId: string; credentialIds: string[] }
+export interface CheckInRecord { publicId: string; status: string; biometric: BiometricChallenge | null }
+export interface CheckInAssertion { credentialId: string; authenticatorData: string; clientDataJSON: string; signature: string }
+export interface OverrideRequest { status: string; reason: string }
 
 export const attendanceApi = {
   mark: (sessionCode: string) =>
-    request<any>("/api/attendance", { method: "POST", body: JSON.stringify({ sessionCode }) }),
+    request<CheckInRecord>("/api/attendance", { method: "POST", body: JSON.stringify({ sessionCode }) }),
+  biometricChallenge: (recordPublicId: string) =>
+    request<BiometricChallenge>(`/api/attendance/${recordPublicId}/biometric/challenge`, { method: "POST" }),
+  confirmBiometric: (recordPublicId: string, assertion: CheckInAssertion) =>
+    request<CheckInRecord>(`/api/attendance/${recordPublicId}/biometric`, {
+      method: "POST",
+      body: JSON.stringify(assertion),
+    }),
 };
 
 export const studentAttendanceApi = {
@@ -262,6 +347,9 @@ export const studentAttendanceApi = {
   getHistory: () => request<Array<{
     sessionPublicId: string; date: string; status: string; checkedInAt: string | null;
   }>>("/api/resumption-attendance/me/history"),
+  getClassHistory: () => request<Array<{
+    sessionPublicId: string; date: string; subjectName: string; status: string; markedAt: string | null;
+  }>>("/api/students/me/session-attendance-history"),
 };
 
 // --- Resumption Sessions & Attendance (Tier 1) ---
@@ -284,9 +372,16 @@ export const resumptionApi = {
       body: JSON.stringify({ newExpiresAt }),
     }),
   markAttendance: (resumptionCode: string) =>
-    request<any>("/api/resumption-attendance", {
+    request<CheckInRecord>("/api/resumption-attendance", {
       method: "POST",
       body: JSON.stringify({ resumptionCode }),
+    }),
+  biometricChallenge: (recordPublicId: string) =>
+    request<BiometricChallenge>(`/api/resumption-attendance/${recordPublicId}/biometric/challenge`, { method: "POST" }),
+  confirmBiometric: (recordPublicId: string, assertion: CheckInAssertion) =>
+    request<CheckInRecord>(`/api/resumption-attendance/${recordPublicId}/biometric`, {
+      method: "POST",
+      body: JSON.stringify(assertion),
     }),
   getCurrentCode: (publicId: string) =>
     request<{ code: string; secondsRemaining: number }>(`/api/resumption-sessions/${publicId}/current-code`),
@@ -294,9 +389,59 @@ export const resumptionApi = {
     request<any[]>(`/api/resumption-sessions?cohortPublicId=${cohortPublicId}`),
   getAttendance: (publicId: string) =>
     request<any[]>(`/api/resumption-sessions/${publicId}/attendance`),
+  overrideAttendance: (publicId: string, studentPublicId: string, body: OverrideRequest) =>
+    request<any>(`/api/resumption-sessions/${publicId}/attendance/${studentPublicId}`, {
+      method: "PUT",
+      body: JSON.stringify(body),
+    }),
 };
 
 // --- Admin Attendance Reporting ---
+// Analytics dashboard — over the cohorts the caller may see (VIEW_INSTITUTION_ANALYTICS).
+export interface InstitutionAnalytics {
+  days: number;
+  cohortCount: number;
+  studentCount: number;
+  resumptionRatePercent: number | null;
+  classRatePercent: number | null;
+  today: { expected: number; present: number; late: number; pendingBiometric: number; openSessions: number };
+  split: { present: number; late: number; absent: number; pendingBiometric: number };
+  trend: Array<{ date: string; resumptionRatePercent: number | null; classRatePercent: number | null }>;
+}
+
+export interface StudentAttendanceDetail {
+  cohortPublicId: string | null;
+  cohortName: string | null;
+  resumption: Array<{ sessionPublicId: string; date: string; status: string; checkedInAt: string | null }>;
+  classes: Array<{ sessionPublicId: string; date: string; subjectName: string; status: string; markedAt: string | null }>;
+}
+
+export interface FacilitatorCohortAnalytics {
+  cohortPublicId: string;
+  cohortName: string;
+  days: number;
+  attendance: InstitutionAnalytics;
+  pendingExtensions: number;
+  assignments: Array<{
+    publicId: string; title: string; subjectName: string; status: string; deadline: string;
+    total: number; onTime: number; late: number; reviewed: number; missing: number; notYet: number;
+  }>;
+  students: Array<{
+    publicId: string; name: string; resumptionRatePercent: number | null; classRatePercent: number | null;
+    handedIn: number; late: number; missing: number;
+  }>;
+}
+
+export const facilitatorAnalyticsApi = {
+  get: (cohortPublicId: string, days: number) =>
+    request<FacilitatorCohortAnalytics>(`/api/facilitator/analytics?cohortPublicId=${cohortPublicId}&days=${days}`),
+};
+
+export const analyticsApi = {
+  get: (days: number) => request<InstitutionAnalytics>(`/api/admin/analytics?days=${days}`),
+  student: (publicId: string) => request<StudentAttendanceDetail>(`/api/admin/analytics/students/${publicId}`),
+};
+
 export const adminAttendanceApi = {
   getAllCohorts: () => request<Array<{
     cohortPublicId: string; cohortName: string; studentCount: number; averageRatePercent: number;
@@ -322,6 +467,27 @@ export const assignmentApi = {
     request<any[]>(`/api/assignments/cohort/${cohortPublicId}`),
   getOne: (publicId: string) =>
     request<any>(`/api/assignments/${publicId}`),
+  // Publish later: an ISO local date-time, or null to clear the schedule.
+  schedule: (publicId: string, publishAt: string | null) =>
+    request<any>(`/api/assignments/${publicId}/schedule`, { method: "PATCH", body: JSON.stringify({ publishAt }) }),
+  attach: async (publicId: string, file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const token = getAccessToken();
+    const res = await fetch(`${API_BASE}/api/assignments/${publicId}/attachment`, {
+      method: "POST",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    });
+    if (!res.ok) {
+      let message = res.status === 413 ? "That file is too large (5 MB max)" : "Upload failed";
+      try { message = (await res.json()).message || message; } catch {}
+      throw new Error(message);
+    }
+    return res.json();
+  },
+  removeAttachment: (publicId: string) =>
+    request<any>(`/api/assignments/${publicId}/attachment`, { method: "DELETE" }),
 };
 
 // --- Submissions ---
@@ -358,4 +524,44 @@ export const extensionRequestApi = {
       request<any>(`/api/extension-requests/${publicId}/review`, {
         method: "PATCH", body: JSON.stringify({ approve, reviewNote }),
       }),
+};
+
+// --- Notifications (polled; scoped to the current institution) ---
+export interface AppNotification {
+  publicId: string;
+  type: string;
+  title: string;
+  body: string;
+  linkRoute: string | null;
+  linkPublicId: string | null;
+  read: boolean;
+  createdAt: string;
+}
+
+export const notificationApi = {
+  list: (page = 0, size = 20) =>
+    request<{ items: AppNotification[]; page: number; size: number; total: number; hasMore: boolean }>(
+      `/api/notifications?page=${page}&size=${size}`),
+  unreadCount: () => request<{ count: number }>("/api/notifications/unread-count"),
+  markRead: (publicId: string) => request<AppNotification>(`/api/notifications/${publicId}/read`, { method: "PATCH" }),
+  markAllRead: () => request<{ updated: number }>("/api/notifications/read-all", { method: "POST" }),
+};
+
+// --- Platform console (platform admins only) ---
+export interface PlatformOverview {
+  institutions: number; active: number; pending: number; suspended: number;
+  newLast30Days: number; users: number; memberships: number;
+}
+export interface PlatformInstitution {
+  publicId: string; name: string; slug: string; status: "ACTIVE" | "PENDING" | "SUSPENDED";
+  createdAt: string; members: number; ownerName: string | null; ownerEmail: string | null;
+}
+export const platformApi = {
+  overview: () => request<PlatformOverview>("/api/platform/overview"),
+  institutions: () => request<PlatformInstitution[]>("/api/platform/institutions"),
+  changeStatus: (publicId: string, status: PlatformInstitution["status"], reason: string) =>
+    request<PlatformInstitution>(`/api/platform/institutions/${publicId}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ status, reason }),
+    }),
 };

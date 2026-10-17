@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import AdminHome from "@/components/sections/AdminHome";
 
-export default function AdminIndex() {
-  redirect("/dashboard/admin/invite-codes");
+export default function AdminHomePage() {
+  return <AdminHome variant="ADMIN" />;
 }

@@ -15,7 +15,8 @@ export function QrDisplay({ url, label }: Props) {
     <>
       {/* Inline QR with hover-reveal expand button */}
       <div className="relative group inline-block">
-        <QRCodeSVG value={url} size={200} />
+        {/* marginSize: a white quiet zone, so the code still scans on a dark-mode card. */}
+        <QRCodeSVG value={url} size={200} marginSize={2} />
         <button
           onClick={() => setExpanded(true)}
           className="absolute top-1 right-1 bg-white/80 rounded p-1 opacity-0 group-hover:opacity-100 transition-opacity text-gray-600 hover:text-gray-900"
@@ -35,11 +36,11 @@ export function QrDisplay({ url, label }: Props) {
           onClick={() => setExpanded(false)}
         >
           <div
-            className="bg-white rounded-xl p-8 flex flex-col items-center gap-4"
+            className="bg-surface rounded-xl p-8 flex flex-col items-center gap-4"
             onClick={(e) => e.stopPropagation()}
           >
             {label && <p className="text-sm font-medium text-gray-700">{label}</p>}
-            <QRCodeSVG value={url} size={480} />
+            <QRCodeSVG value={url} size={480} marginSize={2} />
             <button
               onClick={() => setExpanded(false)}
               className="text-sm text-gray-500 hover:text-gray-700 underline"

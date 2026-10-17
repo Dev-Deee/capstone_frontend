@@ -3,17 +3,23 @@
 import { useState } from "react";
 import Link from "next/link";
 import { authApi } from "@/lib/api";
+import { emailError } from "@/lib/validation";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formatError, setFormatError] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    // A format check reveals nothing about accounts; it just catches typos.
+    const invalid = emailError(email);
+    setFormatError(invalid);
+    if (invalid) return;
     setIsSubmitting(true);
     try {
-      await authApi.forgotPassword(email);
+      await authApi.forgotPassword(email.trim());
     } finally {
       // Always show the same success state, whether or not the email
       // exists — matches the backend's enumeration-safe behavior.
@@ -24,7 +30,7 @@ export default function ForgotPasswordPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="w-full max-w-sm bg-white p-8 rounded-lg shadow-sm border border-gray-200">
+      <div className="w-full max-w-sm bg-surface p-8 rounded-lg shadow-sm border border-gray-200">
         {submitted ? (
           <>
             <p className="text-gray-900 font-medium">Check your email</p>
@@ -47,6 +53,7 @@ export default function ForgotPasswordPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
               />
+              {formatError && <p className="mt-1.5 text-sm text-red-600" role="alert">{formatError}</p>}
               <button
                 type="submit"
                 disabled={isSubmitting}

@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import AdminHome from "@/components/sections/AdminHome";
 
-export default function SuperAdminIndex() {
-  redirect("/dashboard/super-admin/cohorts");
+export default function SuperAdminHomePage() {
+  return <AdminHome variant="SUPER_ADMIN" />;
 }

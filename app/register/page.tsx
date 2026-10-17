@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { authApi } from "@/lib/api";
 import { setTokens } from "@/lib/api";
+import PasswordChecklist from "@/components/PasswordChecklist";
+import { emailError, normalizePhone, passwordError, phoneError } from "@/lib/validation";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -23,9 +25,17 @@ export default function RegisterPage() {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Invite emails/texts link to /register?code=XXXX — prefill so students don't retype it.
+  useEffect(() => {
+    const code = new URLSearchParams(window.location.search).get("code");
+    if (code) setInviteCode(code.toUpperCase());
+  }, []);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    const invalid = emailError(email) ?? phoneError(phoneNumber) ?? passwordError(password);
+    if (invalid) { setError(invalid); return; }
     setIsSubmitting(true);
     try {
       const response = await authApi.register({
@@ -33,8 +43,8 @@ export default function RegisterPage() {
         firstName,
         middleName: middleName || undefined,
         lastName,
-        email,
-        phoneNumber,
+        email: email.trim(),
+        phoneNumber: normalizePhone(phoneNumber),
         institutionStudentId: institutionStudentId || undefined,
         password,
         consentGiven,
@@ -50,7 +60,7 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-10">
-      <div className="w-full max-w-sm bg-white p-8 rounded-lg shadow-sm border border-gray-200">
+      <div className="w-full max-w-sm bg-surface p-8 rounded-lg shadow-sm border border-gray-200">
         <h1 className="text-xl font-semibold text-gray-900 mb-1">Create your account</h1>
         <p className="text-sm text-gray-500 mb-6">
           Enter the invite code your facilitator or admin shared with you.
@@ -121,9 +131,10 @@ export default function RegisterPage() {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Phone number</label>
             <input
-              type="text"
+              type="tel"
               required
-              placeholder="e.g. 08012345678"
+              autoComplete="tel"
+              placeholder="e.g. 08012345678 or +2348012345678"
               value={phoneNumber}
               onChange={(e) => setPhoneNumber(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
@@ -148,7 +159,8 @@ export default function RegisterPage() {
               <input
                 type={showPassword ? "text" : "password"}
                 required
-                placeholder="e.g. SecurePass123!"
+                autoComplete="new-password"
+                maxLength={128}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full px-3 py-2 pr-16 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
@@ -162,6 +174,7 @@ export default function RegisterPage() {
                 {showPassword ? "Hide" : "Show"}
               </button>
             </div>
+            <PasswordChecklist password={password} />
           </div>
 
           <label className="flex items-start gap-2 text-sm text-gray-700">
