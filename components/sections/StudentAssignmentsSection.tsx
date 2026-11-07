@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { submissionApi, assignmentApi, extensionRequestApi } from "@/lib/api";
 import ListToolbar from "@/components/ui/ListToolbar";
+import { gradeText } from "@/lib/grading";
 
 type SubmissionEntry = {
   submission: any;
@@ -148,14 +149,15 @@ function ExtensionForm({ submissionPublicId, onSuccess }: ExtensionFormProps) {
   );
 }
 
-type Group = "DUE" | "NEW" | "SUBMITTED" | "REVIEWED" | "MISSED";
+type Group = "REDO" | "DUE" | "NEW" | "SUBMITTED" | "REVIEWED" | "MISSED";
 type Filter = Group | "ALL";
 
 const GROUPS: { value: Group; label: string; hint: string }[] = [
+  { value: "REDO", label: "Needs redo", hint: "Your facilitator sent these back. Read their comments and hand in again." },
   { value: "DUE", label: "Due soon", hint: "Due in the next 3 days and not handed in yet." },
   { value: "NEW", label: "New", hint: "Not handed in yet, with time to spare." },
   { value: "SUBMITTED", label: "Submitted", hint: "Handed in and waiting for your facilitator." },
-  { value: "REVIEWED", label: "Reviewed", hint: "Your facilitator has reviewed these." },
+  { value: "REVIEWED", label: "Reviewed", hint: "Your grades and feedback, once your facilitator releases them." },
   { value: "MISSED", label: "Missed", hint: "The deadline passed without a hand-in." },
 ];
 const SOON_MS = 3 * 86_400_000;
@@ -163,6 +165,7 @@ const SOON_MS = 3 * 86_400_000;
 // Which pile an assignment belongs in, from the student's point of view. Uses
 // the deadline that actually applies (an approved extension's, if any).
 function groupOf(sub: any, a: any): Group {
+  if (sub.status === "REDO_REQUESTED") return "REDO";
   if (sub.status === "REVIEWED") return "REVIEWED";
   if (sub.status === "SUBMITTED" || sub.status === "LATE_SUBMITTED") return "SUBMITTED";
   if (sub.status === "MISSING") return "MISSED";
@@ -183,6 +186,7 @@ function dueText(d: Date) {
 }
 
 const PILL: Record<string, [string, string]> = {
+  REDO: ["Needs redo", "bg-amber-100 text-amber-700"],
   DUE: ["Due soon", "bg-amber-100 text-amber-700"],
   NEW: ["To do", "bg-blue-100 text-blue-700"],
   SUBMITTED: ["Submitted", "bg-green-100 text-green-700"],
@@ -274,13 +278,19 @@ export default function StudentAssignmentsSection() {
             {visible.map(({ submission, assignment, group }) => {
               const due = deadlineOf(submission, assignment);
               const firstHandIn = !submission.submittedAt;
-              const canSubmit = assignment?.status === "OPEN" && due.getTime() > Date.now()
-                && submission.status !== "REVIEWED" && submission.status !== "MISSING"
-                && (firstHandIn || (submission.resubmissionCount ?? 0) < (assignment?.maxResubmissions ?? 0));
-              const resubsLeft = Math.max(0, (assignment?.maxResubmissions ?? 0) - (submission.resubmissionCount ?? 0));
+              const allowed = submission.attemptsAllowed ?? assignment?.maxResubmissions ?? 0;
+              const redo = group === "REDO";
+              const redoOpen = redo && (!submission.redoDueAt || new Date(submission.redoDueAt).getTime() > Date.now());
+              // A redo can be handed in until its redo-by date, even after the deadline.
+              const canSubmit = (redoOpen || (assignment?.status === "OPEN" && due.getTime() > Date.now()
+                && submission.status !== "REVIEWED" && submission.status !== "MISSING" && !redo))
+                && (firstHandIn || (submission.resubmissionCount ?? 0) < allowed);
+              const resubsLeft = Math.max(0, allowed - (submission.resubmissionCount ?? 0));
+              const grade = gradeText(submission.gradingType, submission.maxMarks, submission.score, submission.passed);
               const extensionPending = submission.extensionStatus === "PENDING_APPROVAL";
               const canAskForTime = assignment && assignment.status !== "CLOSED" && !extensionPending
                 && (group === "DUE" || group === "NEW" || group === "MISSED") && submission.status !== "MISSING";
+
               const isOpenRow = open?.id === submission.publicId;
               const pillKind = group === "SUBMITTED" ? submission.status : group;
 
@@ -300,12 +310,14 @@ export default function StudentAssignmentsSection() {
                           <span className="truncate">{assignment.attachmentName ?? "Attachment"}</span>
                         </a>
                       )}
-                      <p className={`mt-1.5 text-xs ${group === "DUE" ? "text-amber-700" : group === "MISSED" ? "text-red-600" : "text-gray-400"}`}>
-                        {group === "SUBMITTED" || group === "REVIEWED"
+                      <p className={`mt-1.5 text-xs ${group === "DUE" || redo ? "text-amber-700" : group === "MISSED" ? "text-red-600" : "text-gray-400"}`}>
+                        {redo
+                          ? (redoOpen ? `Redo by ${new Date(submission.redoDueAt).toLocaleString(undefined, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}`
+                            : "The time to redo has passed. Ask your facilitator for more time")
+                          : group === "SUBMITTED" || group === "REVIEWED"
                           ? `Handed in ${new Date(submission.submittedAt).toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}`
                           : dueText(due)}
-                        {" · "}
-                        {due.toLocaleString(undefined, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                        {!redo && <>{" · "}{due.toLocaleString(undefined, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</>}
                         {submission.extensionStatus === "APPROVED" && " · extended"}
                         {extensionPending && " · extension requested"}
                         {submission.extensionStatus === "DENIED" && " · extension declined"}
@@ -321,11 +333,21 @@ export default function StudentAssignmentsSection() {
                       {canSubmit && (
                         <button onClick={() => setOpen(isOpenRow && open?.kind === "submit" ? null : { id: submission.publicId, kind: "submit" })}
                           className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700">
-                          {firstHandIn ? "Hand in" : `Resubmit (${resubsLeft} left)`}
+                          {firstHandIn ? "Hand in" : redo ? `Hand in again (${resubsLeft} left)` : `Resubmit (${resubsLeft} left)`}
                         </button>
                       )}
                     </div>
                   </div>
+
+                  {/* The facilitator's review: a redo request at once, a grade once released */}
+                  {(redo || (group === "REVIEWED" && submission.gradesReleased)) && (grade || submission.feedback) && (
+                    <div className={`mt-3 rounded-lg border px-3 py-2 ${redo ? "border-amber-200 bg-amber-50" : "border-gray-200 bg-gray-50"}`}>
+                      <p className={`text-xs font-medium ${redo ? "text-amber-800" : "text-gray-700"}`}>
+                        {redo ? "What to change" : grade ? `Grade: ${grade}` : "Feedback"}
+                      </p>
+                      {submission.feedback && <p className={`mt-0.5 whitespace-pre-wrap text-sm ${redo ? "text-amber-800" : "text-gray-700"}`}>{submission.feedback}</p>}
+                    </div>
+                  )}
 
                   {assignment?.clarificationNote && (
                     <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
