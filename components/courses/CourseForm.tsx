@@ -94,9 +94,9 @@ export default function CourseForm({ role, initial, submitLabel, onSubmit, onCan
           {subjectOptions.map((s) => <option key={s.publicId} value={s.publicId}>{s.name}</option>)}
         </select>
       </label>
+      {!facilitator && (
       <div className="text-xs text-gray-500">
         Who can see it
-        {!facilitator && (
           <div className="mt-1 flex gap-2">
             {[false, true].map((v) => (
               <button key={String(v)} type="button" onClick={() => setAllStudents(v)} aria-pressed={allStudents === v}
@@ -105,8 +105,8 @@ export default function CourseForm({ role, initial, submitLabel, onSubmit, onCan
               </button>
             ))}
           </div>
-        )}
       </div>
+      )}
       {!allStudents && (
         <fieldset className="md:col-span-2">
           <legend className="text-xs text-gray-500">Cohorts</legend>

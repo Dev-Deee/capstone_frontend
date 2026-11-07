@@ -64,12 +64,12 @@ function AddMaterial({ section, onDone, onError }: { section: CourseSection; onD
         ))}
       </div>
       {mode === "file" ? (
-        <label className="block text-xs text-gray-500">File (documents, slides, video; 100 MB max)
+        <label key="file" className="block text-xs text-gray-500">File (documents, slides, video; 100 MB max)
           <input type="file" required onChange={(e) => setFile(e.target.files?.[0] ?? null)}
             className="mt-1 block w-full text-sm text-gray-600 file:mr-3 file:rounded-md file:border-0 file:bg-surface file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-gray-700 file:ring-1 file:ring-gray-200 hover:file:bg-gray-100" />
         </label>
       ) : (
-        <label className="block text-xs text-gray-500">Link (Google Drive file or folder, or any web page)
+        <label key="link" className="block text-xs text-gray-500">Link (Google Drive file or folder, or any web page)
           <input type="url" required value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://drive.google.com/…" className={`${inputClass} mt-1`} />
         </label>
       )}
