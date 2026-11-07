@@ -457,6 +457,7 @@ export const assignmentApi = {
     cohortPublicId: string; subjectPublicId: string;
     title: string; description: string; deadline: string;
     maxResubmissions?: number;
+    gradingType?: GradingType; maxMarks?: number;
   }) =>
     request<any>("/api/assignments", { method: "POST", body: JSON.stringify(data) }),
   publish: (publicId: string) =>
@@ -491,26 +492,72 @@ export const assignmentApi = {
 };
 
 // --- Submissions ---
+// The submit endpoint takes form data for links and files alike.
+async function submitForm(submissionPublicId: string, formData: FormData) {
+  const token = getAccessToken();
+  const res = await fetch(`${API_BASE}/api/submissions/${submissionPublicId}/submit`, {
+    method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: formData,
+  });
+  if (!res.ok) {
+    let message = res.status === 413 ? "That file is too large" : "Submission failed";
+    try { message = (await res.json()).message || message; } catch {}
+    throw new Error(message);
+  }
+  return res.json();
+}
+
 export const submissionApi = {
-  submitLink: (submissionPublicId: string, linkUrl: string) =>
-    request<any>(`/api/submissions/${submissionPublicId}/submit`, {
-      method: "POST", body: JSON.stringify({ submissionType: "LINK", linkUrl }),
-    }),
+  submitLink: (submissionPublicId: string, linkUrl: string) => {
+    const formData = new FormData();
+    formData.append("submissionType", "LINK");
+    formData.append("linkUrl", linkUrl);
+    return submitForm(submissionPublicId, formData);
+  },
   submitFile: (submissionPublicId: string, file: File) => {
     const formData = new FormData();
     formData.append("file", file);
     formData.append("submissionType", "FILE");
-    const token = getAccessToken();
-    return fetch(`${API_BASE}/api/submissions/${submissionPublicId}/submit`, {
-      method: "POST",
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-      body: formData,
-    }).then((res) => {
-      if (!res.ok) throw new Error("Submission failed");
-      return res.json();
-    });
+    return submitForm(submissionPublicId, formData);
   },
   getMine: () => request<any[]>("/api/submissions/mine"),
+};
+
+// --- Review & grading ---
+export type GradingType = "MARKS" | "PERCENTAGE" | "PASS_FAIL" | "FEEDBACK_ONLY";
+export type SubmissionStatus = "PENDING" | "SUBMITTED" | "LATE_SUBMITTED" | "MISSING" | "REVIEWED" | "REDO_REQUESTED";
+
+export interface ReviewAttempt {
+  attemptNumber: number; submittedAt: string | null; submissionType: "LINK" | "FILE" | null;
+  linkUrl: string | null; fileUrl: string | null; decision: "ACCEPT" | "REDO";
+  score: number | null; passed: boolean | null; feedback: string | null;
+  reviewedByName: string; reviewedAt: string;
+}
+
+export interface ReviewRow {
+  publicId: string; studentPublicId: string; studentName: string; studentEmail: string;
+  status: SubmissionStatus; submissionType: "LINK" | "FILE" | null;
+  linkUrl: string | null; fileUrl: string | null; submittedAt: string | null; late: boolean;
+  effectiveDeadline: string; resubmissionCount: number; attemptsAllowed: number;
+  score: number | null; passed: boolean | null; feedback: string | null;
+  reviewedAt: string | null; reviewedByName: string | null; redoDueAt: string | null;
+  attempts: ReviewAttempt[];
+}
+
+export const reviewApi = {
+  list: (assignmentPublicId: string) =>
+    request<ReviewRow[]>(`/api/assignments/${assignmentPublicId}/submissions`),
+  review: (submissionPublicId: string, body: {
+    decision: "ACCEPT" | "REDO"; score?: number | null; passed?: boolean | null; feedback?: string; redoDueAt?: string;
+  }) => request<ReviewRow>(`/api/submissions/${submissionPublicId}/review`, { method: "POST", body: JSON.stringify(body) }),
+  regrade: (submissionPublicId: string, body: { score?: number | null; passed?: boolean | null; feedback?: string; reason: string }) =>
+    request<ReviewRow>(`/api/submissions/${submissionPublicId}/grade`, { method: "PATCH", body: JSON.stringify(body) }),
+  extendRedo: (submissionPublicId: string, body: { redoDueAt?: string; grantExtraAttempt?: boolean }) =>
+    request<ReviewRow>(`/api/submissions/${submissionPublicId}/redo-extension`, { method: "POST", body: JSON.stringify(body) }),
+  releaseGrades: (assignmentPublicId: string) =>
+    request<any>(`/api/assignments/${assignmentPublicId}/release-grades`, { method: "POST" }),
+  waitingCount: () => request<{ waiting: number }>("/api/submissions/waiting-count"),
 };
 
 // --- Extension Requests ---
