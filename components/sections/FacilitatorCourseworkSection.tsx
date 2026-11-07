@@ -1,7 +1,8 @@
 "use client";
 
 import { Fragment, useEffect, useMemo, useState } from "react";
-import { facilitatorCohortApi, assignmentApi, extensionRequestApi, cohortApi, subjectApi } from "@/lib/api";
+import Link from "next/link";
+import { facilitatorCohortApi, assignmentApi, extensionRequestApi, cohortApi, subjectApi, type GradingType } from "@/lib/api";
 import Avatar from "@/components/ui/Avatar";
 import ListToolbar from "@/components/ui/ListToolbar";
 import RowMenu, { type MenuItem } from "@/components/ui/RowMenu";
@@ -51,6 +52,8 @@ function Due({ deadline, closed }: { deadline: string; closed: boolean }) {
   );
 }
 
+const reviewHref = (a: any) => `/dashboard/facilitator/assignments/${a.publicId}/review`;
+
 const inputClass =
   "w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-surface focus:outline-none focus:ring-2 focus:ring-blue-500";
 
@@ -72,6 +75,8 @@ export default function FacilitatorCourseworkSection() {
   const [selectedCohort, setSelectedCohort] = useState("");
   const [selectedSubject, setSelectedSubject] = useState("");
   const [maxResubmissions, setMaxResubmissions] = useState(3);
+  const [gradingType, setGradingType] = useState<GradingType>("MARKS");
+  const [maxMarks, setMaxMarks] = useState(100);
   const [file, setFile] = useState<File | null>(null);
   const [publishChoice, setPublishChoice] = useState<PublishChoice>("draft");
   const [publishAt, setPublishAt] = useState("");
@@ -168,6 +173,7 @@ export default function FacilitatorCourseworkSection() {
       created = await assignmentApi.create({
         cohortPublicId: selectedCohort, subjectPublicId: selectedSubject,
         title, description, deadline, maxResubmissions,
+        gradingType, maxMarks: gradingType === "MARKS" ? maxMarks : undefined,
       });
       if (file) await assignmentApi.attach(created.publicId, file);
       if (publishChoice === "now") await assignmentApi.publish(created.publicId);
@@ -180,6 +186,7 @@ export default function FacilitatorCourseworkSection() {
       });
       setTitle(""); setDescription(""); setDeadline(""); setFile(null);
       setSelectedCohort(""); setSelectedSubject(""); setMaxResubmissions(3);
+      setGradingType("MARKS"); setMaxMarks(100);
       setPublishChoice("draft"); setPublishAt("");
       setCreating(false);
       setStatus("ALL");
@@ -420,6 +427,20 @@ export default function FacilitatorCourseworkSection() {
               <input type="number" required min={0} value={maxResubmissions}
                 onChange={(e) => setMaxResubmissions(Number(e.target.value))} className={`${inputClass} mt-1`} />
             </label>
+            <label className="text-xs text-gray-500">Grading
+              <select value={gradingType} onChange={(e) => setGradingType(e.target.value as GradingType)} className={`${inputClass} mt-1`}>
+                <option value="MARKS">Marks</option>
+                <option value="PERCENTAGE">Percentage</option>
+                <option value="PASS_FAIL">Pass or fail</option>
+                <option value="FEEDBACK_ONLY">Feedback only</option>
+              </select>
+            </label>
+            {gradingType === "MARKS" ? (
+              <label className="text-xs text-gray-500">Marks out of
+                <input type="number" required min={1} max={1000} value={maxMarks}
+                  onChange={(e) => setMaxMarks(Number(e.target.value))} className={`${inputClass} mt-1`} />
+              </label>
+            ) : <div className="hidden md:block" />}
             <label className="text-xs text-gray-500 md:col-span-2">Attachment (optional — brief, starter files, rubric; 5 MB max)
               <input type="file" onChange={(e) => setFile(e.target.files?.[0] ?? null)}
                 className="mt-1 block w-full text-sm text-gray-600 file:mr-3 file:rounded-md file:border-0 file:bg-surface file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-gray-700 file:ring-1 file:ring-gray-200 hover:file:bg-gray-100" />
@@ -505,7 +526,16 @@ export default function FacilitatorCourseworkSection() {
                           <StatusPill status={isScheduled(a) ? "SCHEDULED" : a.status} />
                           {isScheduled(a) && <p className="mt-1 whitespace-nowrap text-xs text-gray-400">{fmtWhen(a.publishAt)}</p>}
                         </Td>
-                        <Td align="right"><RowMenu items={menuFor(a)} label={`Actions for ${a.title}`} /></Td>
+                        <Td align="right">
+                          <div className="flex items-center justify-end gap-2">
+                            {a.status !== "DRAFT" && (
+                              <Link href={reviewHref(a)} className="whitespace-nowrap rounded-lg px-2.5 py-1.5 text-sm font-medium text-blue-600 hover:bg-blue-50">
+                                Review
+                              </Link>
+                            )}
+                            <RowMenu items={menuFor(a)} label={`Actions for ${a.title}`} />
+                          </div>
+                        </Td>
                       </Tr>
                       {panel && panel.id === a.publicId && (
                         <tr>

@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { userApi, sessionApi, resumptionApi, facilitatorCohortApi, cohortApi, subjectApi, assignmentApi } from "@/lib/api";
+import Link from "next/link";
+import { userApi, sessionApi, resumptionApi, facilitatorCohortApi, cohortApi, subjectApi, assignmentApi, reviewApi } from "@/lib/api";
 import { QrDisplay } from "@/components/QrDisplay";
 import { LiveCodeDisplay } from "@/components/LiveCodeDisplay";
 import TabBar from "@/components/TabBar";
@@ -9,6 +10,9 @@ import PageHeader, { greeting } from "@/components/PageHeader";
 
 export default function FacilitatorDashboard() {
   const [profile, setProfile] = useState<any>(null);
+  // Handed-in work waiting for this facilitator's review, across their assignments.
+  const [waiting, setWaiting] = useState(0);
+  useEffect(() => { reviewApi.waitingCount().then((r) => setWaiting(r.waiting)).catch(() => {}); }, []);
   const [assignments, setAssignments] = useState<any[]>([]);
   const [cohorts, setCohorts] = useState<any[]>([]);
   const [subjects, setSubjects] = useState<any[]>([]);
@@ -161,6 +165,16 @@ export default function FacilitatorDashboard() {
         title={profile ? `${greeting()}, ${profile.firstName}.` : "Overview"}
         description="Open a class session or today's resumption, and keep the code on screen while students check in."
       />
+
+      {waiting > 0 && (
+        <Link href="/dashboard/facilitator/classes?tab=assignments"
+          className="mb-5 flex items-center justify-between gap-3 rounded-xl border border-gray-200 bg-surface px-4 py-3 text-sm shadow-sm transition-colors hover:border-gray-300">
+          <span className="text-gray-800">
+            <span className="font-medium tabular-nums">{waiting}</span> piece{waiting === 1 ? "" : "s"} of work waiting for your review
+          </span>
+          <span className="text-blue-600">Review →</span>
+        </Link>
+      )}
 
       {message && (
         <div className={`text-sm rounded-lg px-3 py-2 border mb-5 ${
