@@ -27,6 +27,7 @@ const NAV_BY_ROLE: Record<string, NavItem[]> = {
   FACILITATOR: [
     { href: "/dashboard/facilitator", label: "Overview", icon: "home" },
     { href: "/dashboard/facilitator/classes", label: "My Classes", icon: "classes" },
+    { href: "/dashboard/facilitator/courses", label: "Courses", icon: "book" },
     { href: "/dashboard/facilitator/analytics", label: "Analytics", icon: "chart" },
     { href: "/dashboard/facilitator/profile", label: "Account Settings", icon: "settings" },
   ],
@@ -35,6 +36,7 @@ const NAV_BY_ROLE: Record<string, NavItem[]> = {
     { href: "/dashboard/admin/analytics", label: "Analytics", icon: "chart" },
     { href: "/dashboard/admin/people", label: "People", icon: "people" },
     { href: "/dashboard/admin/cohorts", label: "Cohorts & Subjects", icon: "layers" },
+    { href: "/dashboard/admin/courses", label: "Courses", icon: "book" },
     { href: "/dashboard/admin/attendance", label: "Attendance", icon: "calendar" },
   ],
   PLATFORM: [
@@ -45,6 +47,7 @@ const NAV_BY_ROLE: Record<string, NavItem[]> = {
     { href: "/dashboard/super-admin/analytics", label: "Analytics", icon: "chart" },
     { href: "/dashboard/super-admin/institution", label: "Institution", icon: "building" },
     { href: "/dashboard/super-admin/cohorts", label: "Cohorts & Subjects", icon: "layers" },
+    { href: "/dashboard/super-admin/courses", label: "Courses", icon: "book" },
     { href: "/dashboard/super-admin/invites", label: "Invites", icon: "mail" },
     { href: "/dashboard/super-admin/users", label: "Users & Roles", icon: "people" },
     { href: "/dashboard/admin/attendance", label: "Attendance", icon: "calendar" },

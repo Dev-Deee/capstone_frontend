@@ -457,6 +457,7 @@ export const assignmentApi = {
     cohortPublicId: string; subjectPublicId: string;
     title: string; description: string; deadline: string;
     maxResubmissions?: number;
+    gradingType?: GradingType; maxMarks?: number;
   }) =>
     request<any>("/api/assignments", { method: "POST", body: JSON.stringify(data) }),
   publish: (publicId: string) =>
@@ -491,26 +492,136 @@ export const assignmentApi = {
 };
 
 // --- Submissions ---
+// The submit endpoint takes form data for links and files alike.
+async function submitForm(submissionPublicId: string, formData: FormData) {
+  const token = getAccessToken();
+  const res = await fetch(`${API_BASE}/api/submissions/${submissionPublicId}/submit`, {
+    method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: formData,
+  });
+  if (!res.ok) {
+    let message = res.status === 413 ? "That file is too large" : "Submission failed";
+    try { message = (await res.json()).message || message; } catch {}
+    throw new Error(message);
+  }
+  return res.json();
+}
+
 export const submissionApi = {
-  submitLink: (submissionPublicId: string, linkUrl: string) =>
-    request<any>(`/api/submissions/${submissionPublicId}/submit`, {
-      method: "POST", body: JSON.stringify({ submissionType: "LINK", linkUrl }),
-    }),
+  submitLink: (submissionPublicId: string, linkUrl: string) => {
+    const formData = new FormData();
+    formData.append("submissionType", "LINK");
+    formData.append("linkUrl", linkUrl);
+    return submitForm(submissionPublicId, formData);
+  },
   submitFile: (submissionPublicId: string, file: File) => {
     const formData = new FormData();
     formData.append("file", file);
     formData.append("submissionType", "FILE");
+    return submitForm(submissionPublicId, formData);
+  },
+  getMine: () => request<any[]>("/api/submissions/mine"),
+};
+
+// --- Review & grading ---
+export type GradingType = "MARKS" | "PERCENTAGE" | "PASS_FAIL" | "FEEDBACK_ONLY";
+export type SubmissionStatus = "PENDING" | "SUBMITTED" | "LATE_SUBMITTED" | "MISSING" | "REVIEWED" | "REDO_REQUESTED";
+
+export interface ReviewAttempt {
+  attemptNumber: number; submittedAt: string | null; submissionType: "LINK" | "FILE" | null;
+  linkUrl: string | null; fileUrl: string | null; decision: "ACCEPT" | "REDO";
+  score: number | null; passed: boolean | null; feedback: string | null;
+  reviewedByName: string; reviewedAt: string;
+}
+
+export interface ReviewRow {
+  publicId: string; studentPublicId: string; studentName: string; studentEmail: string;
+  status: SubmissionStatus; submissionType: "LINK" | "FILE" | null;
+  linkUrl: string | null; fileUrl: string | null; submittedAt: string | null; late: boolean;
+  effectiveDeadline: string; resubmissionCount: number; attemptsAllowed: number;
+  score: number | null; passed: boolean | null; feedback: string | null;
+  reviewedAt: string | null; reviewedByName: string | null; redoDueAt: string | null;
+  attempts: ReviewAttempt[];
+}
+
+export const reviewApi = {
+  list: (assignmentPublicId: string) =>
+    request<ReviewRow[]>(`/api/assignments/${assignmentPublicId}/submissions`),
+  review: (submissionPublicId: string, body: {
+    decision: "ACCEPT" | "REDO"; score?: number | null; passed?: boolean | null; feedback?: string; redoDueAt?: string;
+  }) => request<ReviewRow>(`/api/submissions/${submissionPublicId}/review`, { method: "POST", body: JSON.stringify(body) }),
+  regrade: (submissionPublicId: string, body: { score?: number | null; passed?: boolean | null; feedback?: string; reason: string }) =>
+    request<ReviewRow>(`/api/submissions/${submissionPublicId}/grade`, { method: "PATCH", body: JSON.stringify(body) }),
+  extendRedo: (submissionPublicId: string, body: { redoDueAt?: string; grantExtraAttempt?: boolean }) =>
+    request<ReviewRow>(`/api/submissions/${submissionPublicId}/redo-extension`, { method: "POST", body: JSON.stringify(body) }),
+  releaseGrades: (assignmentPublicId: string) =>
+    request<any>(`/api/assignments/${assignmentPublicId}/release-grades`, { method: "POST" }),
+  waitingCount: () => request<{ waiting: number }>("/api/submissions/waiting-count"),
+};
+
+// --- Courses ---
+export interface CourseMaterial {
+  publicId: string; title: string; note: string | null; kind: "FILE" | "LINK"; url: string;
+  fileName: string | null; contentType: string | null; sizeBytes: number | null; position: number;
+}
+export interface CourseSection { publicId: string; title: string; position: number; materials: CourseMaterial[] }
+export interface Course {
+  publicId: string; title: string; description: string | null;
+  subjectPublicId: string | null; subjectName: string | null;
+  allStudents: boolean; cohorts: { publicId: string; name: string }[];
+  status: "DRAFT" | "PUBLISHED"; publishAt: string | null; publishedAt: string | null;
+  createdByName: string; createdAt: string; canEdit: boolean; materialCount: number;
+  sections: CourseSection[];
+}
+export interface CourseInput {
+  title: string; description?: string; subjectPublicId?: string; allStudents: boolean; cohortPublicIds: string[];
+}
+
+export const courseApi = {
+  manageable: () => request<Course[]>("/api/courses/manage"),
+  mine: () => request<Course[]>("/api/courses/mine"),
+  get: (publicId: string) => request<Course>(`/api/courses/${publicId}`),
+  create: (data: CourseInput) => request<Course>("/api/courses", { method: "POST", body: JSON.stringify(data) }),
+  update: (publicId: string, data: CourseInput) =>
+    request<Course>(`/api/courses/${publicId}`, { method: "PUT", body: JSON.stringify(data) }),
+  remove: (publicId: string) => request<void>(`/api/courses/${publicId}`, { method: "DELETE" }),
+  publish: (publicId: string) => request<Course>(`/api/courses/${publicId}/publish`, { method: "POST" }),
+  unpublish: (publicId: string) => request<Course>(`/api/courses/${publicId}/unpublish`, { method: "POST" }),
+  schedule: (publicId: string, publishAt: string | null) =>
+    request<Course>(`/api/courses/${publicId}/schedule`, { method: "PATCH", body: JSON.stringify({ publishAt }) }),
+  addSection: (coursePublicId: string, title: string) =>
+    request<Course>(`/api/courses/${coursePublicId}/sections`, { method: "POST", body: JSON.stringify({ title }) }),
+  renameSection: (sectionPublicId: string, title: string) =>
+    request<Course>(`/api/course-sections/${sectionPublicId}`, { method: "PATCH", body: JSON.stringify({ title }) }),
+  removeSection: (sectionPublicId: string) => request<Course>(`/api/course-sections/${sectionPublicId}`, { method: "DELETE" }),
+  moveSection: (sectionPublicId: string, direction: "UP" | "DOWN") =>
+    request<Course>(`/api/course-sections/${sectionPublicId}/move`, { method: "POST", body: JSON.stringify({ direction }) }),
+  addLink: (sectionPublicId: string, data: { title: string; url: string; note?: string }) =>
+    request<Course>(`/api/course-sections/${sectionPublicId}/links`, { method: "POST", body: JSON.stringify(data) }),
+  addFile: async (sectionPublicId: string, file: File, title?: string, note?: string): Promise<Course> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    if (title) formData.append("title", title);
+    if (note) formData.append("note", note);
     const token = getAccessToken();
-    return fetch(`${API_BASE}/api/submissions/${submissionPublicId}/submit`, {
+    const res = await fetch(`${API_BASE}/api/course-sections/${sectionPublicId}/files`, {
       method: "POST",
       headers: token ? { Authorization: `Bearer ${token}` } : {},
       body: formData,
-    }).then((res) => {
-      if (!res.ok) throw new Error("Submission failed");
-      return res.json();
     });
+    if (!res.ok) {
+      let message = res.status === 413 ? "That file is too large (100 MB max)" : "Upload failed";
+      try { message = (await res.json()).message || message; } catch {}
+      throw new Error(message);
+    }
+    return res.json();
   },
-  getMine: () => request<any[]>("/api/submissions/mine"),
+  updateMaterial: (materialPublicId: string, data: { title: string; note?: string }) =>
+    request<Course>(`/api/course-materials/${materialPublicId}`, { method: "PATCH", body: JSON.stringify(data) }),
+  removeMaterial: (materialPublicId: string) => request<Course>(`/api/course-materials/${materialPublicId}`, { method: "DELETE" }),
+  moveMaterial: (materialPublicId: string, direction: "UP" | "DOWN") =>
+    request<Course>(`/api/course-materials/${materialPublicId}/move`, { method: "POST", body: JSON.stringify({ direction }) }),
 };
 
 // --- Extension Requests ---
