@@ -58,7 +58,7 @@ export default function PlatformPage() {
   }
 
   const q = search.trim().toLowerCase();
-  const matching = list.filter((i) => !q || [i.name, i.slug, i.ownerName, i.ownerEmail].some((v) => v?.toLowerCase().includes(q)));
+  const matching = list.filter((i) => !q || [i.name, i.handle, i.ownerName, i.ownerEmail].some((v) => v?.toLowerCase().includes(q)));
   const visible = matching.filter((i) => filter === "ALL" || i.status === filter);
 
   async function saveChange(i: PlatformInstitution) {
@@ -153,7 +153,7 @@ export default function PlatformPage() {
                           <Avatar name={i.name} />
                           <div className="min-w-0">
                             <p className="truncate font-medium text-gray-900">{i.name}</p>
-                            <p className="truncate font-mono text-xs text-gray-400">{i.slug}</p>
+                            <p className="truncate font-mono text-xs text-gray-400">{i.handle}</p>
                           </div>
                         </div>
                       </Td>
