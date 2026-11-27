@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-// "lagos tech academy" → "lagos-tech-academy" (mirrors the backend's slugify).
-export function slugify(name: string) {
+// "lagos tech academy" → "lagos-tech-academy" (mirrors the backend's toHandle).
+export function toHandle(name: string) {
   return name.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase()
     .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40).replace(/-+$/, "");
 }
@@ -14,13 +14,13 @@ export function slugify(name: string) {
 export default function StartForm({ align = "left" }: { align?: "left" | "center" }) {
   const router = useRouter();
   const [name, setName] = useState("");
-  const slug = slugify(name);
+  const handle = toHandle(name);
 
   function start(e: React.FormEvent) {
     e.preventDefault();
     const params = new URLSearchParams();
     if (name.trim()) params.set("name", name.trim());
-    if (slug) params.set("slug", slug);
+    if (handle) params.set("handle", handle);
     router.push(`/signup${params.toString() ? `?${params}` : ""}`);
   }
 
@@ -43,8 +43,8 @@ export default function StartForm({ align = "left" }: { align?: "left" | "center
         </button>
       </div>
       <p className={`mt-3 min-h-5 text-sm text-gray-500 ${align === "center" ? "text-center" : ""}`}>
-        {slug ? (
-          <>Your institution handle: <span className="font-mono text-gray-800">{slug}</span></>
+        {handle ? (
+          <>Your institution handle: <span className="font-mono text-gray-800">{handle}</span></>
         ) : (
           <>Takes a minute. You&rsquo;ll be its owner and can invite your team straight away.</>
         )}

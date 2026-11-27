@@ -102,14 +102,14 @@ export interface AuthResponse {
   // platform admin outside any institution).
   institutionPublicId: string | null;
   institutionName: string | null;
-  institutionSlug: string | null;
+  institutionHandle: string | null;
   platformAdmin: boolean;
 }
 
 export interface MembershipSummary {
   institutionPublicId: string;
   institutionName: string;
-  institutionSlug: string;
+  institutionHandle: string;
   roles: string[];
   active: boolean;
   current: boolean;
@@ -214,22 +214,22 @@ export const institutionApi = {
   current: () => request<any>("/api/institutions/current"),
   mine: () => request<MembershipSummary[]>("/api/institutions/mine"),
   // A signed-in user founds another institution (session switches into it).
-  found: (data: { name: string; slug: string }) =>
+  found: (data: { name: string; handle: string }) =>
     request<AuthResponse>("/api/institutions", { method: "POST", body: JSON.stringify(data) }),
   // Public self-serve sign-up: new person + new institution.
   signup: (data: {
-    institutionName: string; slug: string; firstName: string; lastName: string;
+    institutionName: string; handle: string; firstName: string; lastName: string;
     email: string; phoneNumber: string; password: string; consentGiven: boolean;
   }) => request<AuthResponse>("/api/institutions/signup", { method: "POST", body: JSON.stringify(data) }, false),
-  slugAvailability: (slug: string) =>
-    request<{ slug: string; available: boolean; reason: string | null; suggestion: string | null }>(
-      `/api/institutions/slug-availability?slug=${encodeURIComponent(slug)}`, {}, false),
+  handleAvailability: (handle: string) =>
+    request<{ handle: string; available: boolean; reason: string | null; suggestion: string | null }>(
+      `/api/institutions/handle-availability?handle=${encodeURIComponent(handle)}`, {}, false),
 };
 
 export const inviteApi = {
   // Public: what the invite is for and whether the invitee already has an account.
   preview: (token: string) => request<{
-    institutionName: string; institutionSlug: string; role: string; email: string;
+    institutionName: string; institutionHandle: string; role: string; email: string;
     firstName: string | null; accountExists: boolean;
   }>(`/api/invites/${encodeURIComponent(token)}`, {}, false),
   // Existing account, signed in as the invited email.
@@ -664,7 +664,7 @@ export interface PlatformOverview {
   newLast30Days: number; users: number; memberships: number;
 }
 export interface PlatformInstitution {
-  publicId: string; name: string; slug: string; status: "ACTIVE" | "PENDING" | "SUSPENDED";
+  publicId: string; name: string; handle: string; status: "ACTIVE" | "PENDING" | "SUSPENDED";
   createdAt: string; members: number; ownerName: string | null; ownerEmail: string | null;
 }
 export const platformApi = {

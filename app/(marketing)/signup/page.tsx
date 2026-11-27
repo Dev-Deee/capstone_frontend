@@ -4,11 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { institutionApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
-import { slugify } from "@/components/marketing/StartForm";
+import { toHandle } from "@/components/marketing/StartForm";
 import PasswordChecklist from "@/components/PasswordChecklist";
 import { emailError, normalizePhone, passwordError, phoneError } from "@/lib/validation";
 
-type SlugState =
+type HandleState =
   | { kind: "idle" }
   | { kind: "checking" }
   | { kind: "ok" }
@@ -21,9 +21,9 @@ const input =
 export default function SignupPage() {
   const { enterSession } = useAuth();
   const [name, setName] = useState("");
-  const [slug, setSlug] = useState("");
-  const [slugEdited, setSlugEdited] = useState(false);
-  const [slugState, setSlugState] = useState<SlugState>({ kind: "idle" });
+  const [handle, setHandle] = useState("");
+  const [handleEdited, setHandleEdited] = useState(false);
+  const [handleState, setHandleState] = useState<HandleState>({ kind: "idle" });
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -39,35 +39,35 @@ export default function SignupPage() {
   useEffect(() => {
     const p = new URLSearchParams(window.location.search);
     const n = p.get("name");
-    const s = p.get("slug");
+    const s = p.get("handle");
     if (n) setName(n);
-    if (s) setSlug(s);
-    else if (n) setSlug(slugify(n));
+    if (s) setHandle(s);
+    else if (n) setHandle(toHandle(n));
   }, []);
 
   // The address follows the name until the founder edits it themselves.
   // (Done in the handler, not an effect, so it can't overwrite a prefilled address.)
   function onNameChange(value: string) {
     setName(value);
-    if (!slugEdited) setSlug(slugify(value));
+    if (!handleEdited) setHandle(toHandle(value));
   }
 
   // Live availability, debounced; stale responses are ignored.
   useEffect(() => {
-    if (!slug) { setSlugState({ kind: "idle" }); return; }
-    setSlugState({ kind: "checking" });
+    if (!handle) { setHandleState({ kind: "idle" }); return; }
+    setHandleState({ kind: "checking" });
     const seq = ++checkSeq.current;
     const t = setTimeout(async () => {
       try {
-        const r = await institutionApi.slugAvailability(slug);
+        const r = await institutionApi.handleAvailability(handle);
         if (seq !== checkSeq.current) return;
-        setSlugState(r.available ? { kind: "ok" } : { kind: "bad", reason: r.reason ?? "Not available", suggestion: r.suggestion });
+        setHandleState(r.available ? { kind: "ok" } : { kind: "bad", reason: r.reason ?? "Not available", suggestion: r.suggestion });
       } catch {
-        if (seq === checkSeq.current) setSlugState({ kind: "idle" });
+        if (seq === checkSeq.current) setHandleState({ kind: "idle" });
       }
     }, 350);
     return () => clearTimeout(t);
-  }, [slug]);
+  }, [handle]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -77,7 +77,7 @@ export default function SignupPage() {
     setSubmitting(true);
     try {
       enterSession(await institutionApi.signup({
-        institutionName: name.trim(), slug, firstName: firstName.trim(), lastName: lastName.trim(),
+        institutionName: name.trim(), handle, firstName: firstName.trim(), lastName: lastName.trim(),
         email: email.trim(), phoneNumber: normalizePhone(phoneNumber), password, consentGiven: consent,
       }));
     } catch (err) {
@@ -86,18 +86,18 @@ export default function SignupPage() {
     }
   }
 
-  const slugHint =
-    slugState.kind === "checking" ? <span className="text-gray-400">Checking…</span>
-    : slugState.kind === "ok" ? <span className="text-green-700">✓ Available</span>
-    : slugState.kind === "bad" ? (
+  const handleHint =
+    handleState.kind === "checking" ? <span className="text-gray-400">Checking…</span>
+    : handleState.kind === "ok" ? <span className="text-green-700">✓ Available</span>
+    : handleState.kind === "bad" ? (
       <span className="text-red-700">
-        {slugState.reason}
-        {slugState.suggestion && (
+        {handleState.reason}
+        {handleState.suggestion && (
           <>
             {" — "}
-            <button type="button" onClick={() => { setSlug(slugState.suggestion!); setSlugEdited(true); }}
+            <button type="button" onClick={() => { setHandle(handleState.suggestion!); setHandleEdited(true); }}
               className="font-medium underline underline-offset-2 hover:text-red-900">
-              use {slugState.suggestion}
+              use {handleState.suggestion}
             </button>
           </>
         )}
@@ -123,11 +123,11 @@ export default function SignupPage() {
               placeholder="e.g. Lagos Tech Academy" className={input} />
           </div>
           <div>
-            <label htmlFor="inst-slug" className="mb-1.5 block text-sm font-medium text-gray-700">Institution handle</label>
-            <input id="inst-slug" required value={slug}
-              onChange={(e) => { setSlug(e.target.value.toLowerCase()); setSlugEdited(true); }}
+            <label htmlFor="inst-handle" className="mb-1.5 block text-sm font-medium text-gray-700">Institution handle</label>
+            <input id="inst-handle" required value={handle}
+              onChange={(e) => { setHandle(e.target.value.toLowerCase()); setHandleEdited(true); }}
               className={`${input} font-mono`} />
-            <p className="mt-1.5 text-sm" aria-live="polite">{slugHint}</p>
+            <p className="mt-1.5 text-sm" aria-live="polite">{handleHint}</p>
           </div>
         </fieldset>
 
@@ -177,7 +177,7 @@ export default function SignupPage() {
         )}
 
         <div className="space-y-4">
-          <button type="submit" disabled={submitting || slugState.kind === "bad"}
+          <button type="submit" disabled={submitting || handleState.kind === "bad"}
             className="group inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 text-[15px] font-medium text-white shadow-sm transition-colors hover:bg-blue-700 disabled:opacity-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/30">
             {submitting ? "Creating your institution…" : <>Create institution <span aria-hidden="true" className="transition-transform group-hover:translate-x-0.5">→</span></>}
           </button>
