@@ -7,4 +7,5 @@ next-env.d.ts
 .DS_Store
 .idea/
 .vercel/
-config.bat
+.env
+.env.local
