@@ -658,6 +658,19 @@ export const notificationApi = {
   markAllRead: () => request<{ updated: number }>("/api/notifications/read-all", { method: "POST" }),
 };
 
+// --- Web Push (installed-app notifications) ---
+export const pushApi = {
+  // enabled=false when the server has no VAPID keys configured.
+  publicKey: () => request<{ enabled: boolean; publicKey: string | null }>("/api/push/public-key"),
+  subscribe: (subscription: PushSubscriptionJSON) =>
+    request<{ publicId: string; createdAt: string }>("/api/push/subscriptions", {
+      method: "POST",
+      body: JSON.stringify(subscription),
+    }),
+  unsubscribe: (endpoint: string) =>
+    request<void>("/api/push/subscriptions", { method: "DELETE", body: JSON.stringify({ endpoint }) }),
+};
+
 // --- Platform console (platform admins only) ---
 export interface PlatformOverview {
   institutions: number; active: number; pending: number; suspended: number;

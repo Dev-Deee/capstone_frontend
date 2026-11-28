@@ -9,6 +9,7 @@ import InstitutionSwitcher from "@/components/InstitutionSwitcher";
 import ThemeToggle from "@/components/ThemeToggle";
 import NotificationBell from "@/components/notifications/NotificationBell";
 import { useUnreadCount } from "@/components/notifications/useUnreadCount";
+import InstallAppButton from "@/components/pwa/InstallAppButton";
 
 type IconName = "home" | "book" | "settings" | "people" | "calendar" | "building" | "layers" | "mail" | "classes" | "chart" | "globe";
 
@@ -238,6 +239,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <span className="text-xs text-blue-100/70">Dark mode</span>
             <ThemeToggle tone="onDark" />
           </div>
+          <InstallAppButton />
           <button
             onClick={() => logout()}
             className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm text-blue-100/80 ring-1 ring-white/10 transition-colors hover:bg-white/10 hover:text-white"

@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { authApi, getAccessToken, setTokens, clearTokens, type AuthResponse } from "./api";
+import { disablePushOnSignOut } from "./pwa";
 
 interface AuthState {
   isAuthenticated: boolean;
@@ -84,6 +85,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function logout(returnTo?: string) {
+    // While still signed in: this device stops getting this account's push notifications.
+    await disablePushOnSignOut();
     try {
       await authApi.logout();
     } catch {
