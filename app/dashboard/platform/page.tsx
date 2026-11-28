@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useState } from "react";
+import Link from "next/link";
 import { platformApi, type PlatformInstitution, type PlatformOverview } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import PageHeader from "@/components/PageHeader";
@@ -92,6 +93,7 @@ export default function PlatformPage() {
   return (
     <div className="p-6 space-y-5">
       <PageHeader eyebrow="Platform" title="Platform"
+        actions={<Link href="/dashboard/platform/account" className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50">Account &amp; password</Link>}
         description="Every institution on Cadence. You can activate, mark pending or suspend one — status changes lock or unlock its members and are recorded in the audit log. What's inside an institution stays private to its members." />
 
       {error && <div className="rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
