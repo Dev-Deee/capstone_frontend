@@ -9,8 +9,9 @@ import InstitutionSwitcher from "@/components/InstitutionSwitcher";
 import ThemeToggle from "@/components/ThemeToggle";
 import NotificationBell from "@/components/notifications/NotificationBell";
 import { useUnreadCount } from "@/components/notifications/useUnreadCount";
+import { useMessageUnread } from "@/components/messages/useMessageUnread";
 
-type IconName = "home" | "book" | "settings" | "people" | "calendar" | "building" | "layers" | "mail" | "classes" | "chart" | "globe";
+type IconName = "home" | "book" | "settings" | "people" | "calendar" | "building" | "layers" | "mail" | "classes" | "chart" | "globe" | "chat";
 
 interface NavItem {
   href: string;
@@ -18,16 +19,21 @@ interface NavItem {
   icon: IconName;
 }
 
+// Direct messages and announcements: every institution role, not the platform console.
+const MESSAGES: NavItem = { href: "/dashboard/messages", label: "Messages", icon: "chat" };
+
 const NAV_BY_ROLE: Record<string, NavItem[]> = {
   STUDENT: [
     { href: "/dashboard/student", label: "Dashboard", icon: "home" },
     { href: "/dashboard/student/learning", label: "My Learning", icon: "book" },
+    MESSAGES,
     { href: "/dashboard/student/profile", label: "Account Settings", icon: "settings" },
   ],
   FACILITATOR: [
     { href: "/dashboard/facilitator", label: "Overview", icon: "home" },
     { href: "/dashboard/facilitator/classes", label: "My Classes", icon: "classes" },
     { href: "/dashboard/facilitator/courses", label: "Courses", icon: "book" },
+    MESSAGES,
     { href: "/dashboard/facilitator/analytics", label: "Analytics", icon: "chart" },
     { href: "/dashboard/facilitator/profile", label: "Account Settings", icon: "settings" },
   ],
@@ -38,6 +44,7 @@ const NAV_BY_ROLE: Record<string, NavItem[]> = {
     { href: "/dashboard/admin/cohorts", label: "Cohorts & Subjects", icon: "layers" },
     { href: "/dashboard/admin/courses", label: "Courses", icon: "book" },
     { href: "/dashboard/admin/attendance", label: "Attendance", icon: "calendar" },
+    MESSAGES,
   ],
   PLATFORM: [
     { href: "/dashboard/platform", label: "Platform", icon: "globe" },
@@ -51,6 +58,7 @@ const NAV_BY_ROLE: Record<string, NavItem[]> = {
     { href: "/dashboard/super-admin/invites", label: "Invites", icon: "mail" },
     { href: "/dashboard/super-admin/users", label: "Users & Roles", icon: "people" },
     { href: "/dashboard/admin/attendance", label: "Attendance", icon: "calendar" },
+    MESSAGES,
   ],
 };
 
@@ -91,6 +99,7 @@ const ICON_PATHS: Record<IconName, React.ReactNode> = {
   mail: <><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3.5 6.5 8.5 6 8.5-6" /></>,
   classes: <><rect x="3" y="4" width="18" height="12" rx="2" /><path d="M8 20h8M12 16v4" /></>,
   chart: <><path d="M3 3v18h18" /><path d="M7 15v2M11 11v6M15 7v10M19 12v5" /></>,
+  chat: <><path d="M21 12a8 8 0 0 1-11.6 7.1L3 21l1.9-6.4A8 8 0 1 1 21 12z" /><path d="M8.5 10.5h7M8.5 13.5h4.5" /></>,
   globe: <><circle cx="12" cy="12" r="9" /><path d="M3 12h18" /><path d="M12 3a14 14 0 0 1 0 18a14 14 0 0 1 0-18" /></>,
 };
 
@@ -133,6 +142,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   // One poller for every bell. A platform admin outside any institution has
   // no institution to be notified in.
   const unread = useUnreadCount(!isLoading && !(roles.length === 0 && platformAdmin));
+  const unreadMessages = useMessageUnread(!isLoading && roles.length > 0);
 
   // Close the mobile drawer whenever the route changes.
   useEffect(() => { setMobileOpen(false); }, [pathname]);
@@ -212,6 +222,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   <Icon name={item.icon} />
                 </span>
                 {item.label}
+                {item.href === MESSAGES.href && unreadMessages > 0 && (
+                  <span className="ml-auto grid h-[18px] min-w-[18px] place-items-center rounded-full bg-red-500 px-1 text-[10px] font-semibold leading-none text-white"
+                    aria-label={`${unreadMessages} unread`}>
+                    {unreadMessages > 99 ? "99+" : unreadMessages}
+                  </span>
+                )}
               </Link>
             );
           })}

@@ -658,6 +658,52 @@ export const notificationApi = {
   markAllRead: () => request<{ updated: number }>("/api/notifications/read-all", { method: "POST" }),
 };
 
+// --- Messages (1:1, polled; scoped to the current institution) ---
+export interface PersonRef { publicId: string; name: string; roles: string[]; profileImageUrl: string | null }
+export interface Conversation {
+  publicId: string; other: PersonRef; lastMessagePreview: string | null; lastMessageAt: string | null;
+  lastMessageFromMe: boolean; unreadCount: number; canSend: boolean;
+}
+export interface ChatMessage {
+  publicId: string; senderPublicId: string; senderName: string; mine: boolean; body: string; createdAt: string;
+}
+export interface MessagePage { items: ChatMessage[]; hasMore: boolean }
+
+export const messageApi = {
+  conversations: () => request<Conversation[]>("/api/conversations"),
+  unreadCount: () => request<{ count: number }>("/api/conversations/unread-count"),
+  contacts: (q = "") => request<PersonRef[]>(`/api/conversations/contacts?q=${encodeURIComponent(q)}`),
+  start: (userPublicId: string) =>
+    request<Conversation>("/api/conversations", { method: "POST", body: JSON.stringify({ userPublicId }) }),
+  get: (publicId: string) => request<Conversation>(`/api/conversations/${publicId}`),
+  messages: (publicId: string, opts: { before?: string; after?: string; size?: number } = {}) => {
+    const qs = new URLSearchParams();
+    if (opts.before) qs.set("before", opts.before);
+    if (opts.after) qs.set("after", opts.after);
+    qs.set("size", String(opts.size ?? 30));
+    return request<MessagePage>(`/api/conversations/${publicId}/messages?${qs}`);
+  },
+  send: (publicId: string, body: string) =>
+    request<ChatMessage>(`/api/conversations/${publicId}/messages`, { method: "POST", body: JSON.stringify({ body }) }),
+  markRead: (publicId: string) => request<Conversation>(`/api/conversations/${publicId}/read`, { method: "POST" }),
+};
+
+// --- Announcements (staff → cohorts; students read) ---
+export interface Announcement {
+  publicId: string; title: string; body: string; authorName: string; authorPublicId: string;
+  cohorts: { publicId: string; name: string }[]; createdAt: string; canDelete: boolean;
+}
+export interface AnnouncementPage { items: Announcement[]; page: number; size: number; total: number; hasMore: boolean }
+
+export const announcementApi = {
+  feed: (page = 0, size = 20) => request<AnnouncementPage>(`/api/announcements/mine?page=${page}&size=${size}`),
+  sent: (page = 0, size = 20) => request<AnnouncementPage>(`/api/announcements/sent?page=${page}&size=${size}`),
+  audiences: () => request<{ publicId: string; name: string }[]>("/api/announcements/audiences"),
+  post: (data: { title: string; body: string; cohortPublicIds: string[] }) =>
+    request<Announcement>("/api/announcements", { method: "POST", body: JSON.stringify(data) }),
+  remove: (publicId: string) => request<void>(`/api/announcements/${publicId}`, { method: "DELETE" }),
+};
+
 // --- Platform console (platform admins only) ---
 export interface PlatformOverview {
   institutions: number; active: number; pending: number; suspended: number;
