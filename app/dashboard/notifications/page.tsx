@@ -6,6 +6,7 @@ import { notificationApi, type AppNotification } from "@/lib/api";
 import PageHeader from "@/components/PageHeader";
 import ListToolbar from "@/components/ui/ListToolbar";
 import NotificationItem from "@/components/notifications/NotificationItem";
+import PushToggle from "@/components/pwa/PushToggle";
 
 type Filter = "ALL" | "UNREAD";
 const PAGE = 20;
@@ -53,6 +54,7 @@ export default function NotificationsPage() {
   return (
     <div className="p-6">
       <PageHeader title="Notifications" description="Updates about your attendance, cohorts and people you've invited — for this institution." />
+      <PushToggle />
       {error && <div className="mb-4 rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
       <section className="rounded-2xl border border-gray-200 bg-surface shadow-sm">
         <ListToolbar
