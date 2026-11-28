@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { submissionApi, assignmentApi, extensionRequestApi } from "@/lib/api";
 import ListToolbar from "@/components/ui/ListToolbar";
 import { gradeText } from "@/lib/grading";
@@ -200,11 +201,18 @@ function Pill({ kind }: { kind: string }) {
   return <span className={`whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-medium ${cls}`}>{label}</span>;
 }
 
+// ?show=redo|due|missed opens on that pile (links from reminder notifications).
+function requestedFilter(show: string | null): Filter | null {
+  const g = show?.toUpperCase();
+  return GROUPS.some((x) => x.value === g) ? (g as Group) : null;
+}
+
 export default function StudentAssignmentsSection() {
+  const show = useSearchParams().get("show");
   const [entries, setEntries] = useState<SubmissionEntry[]>([]);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [filter, setFilter] = useState<Filter | null>(null);
+  const [filter, setFilter] = useState<Filter | null>(() => requestedFilter(show));
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState<{ id: string; kind: "submit" | "extension" } | null>(null);
 
@@ -222,6 +230,8 @@ export default function StudentAssignmentsSection() {
   }
 
   useEffect(() => { loadData(); }, []);
+  // Following another reminder while already on this page switches the pile.
+  useEffect(() => { const f = requestedFilter(show); if (f) setFilter(f); }, [show]);
 
   if (isLoading) {
     return <div className="flex items-center justify-center h-64 text-gray-400 text-sm">Loading…</div>;
