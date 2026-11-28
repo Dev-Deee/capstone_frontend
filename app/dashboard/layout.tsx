@@ -10,7 +10,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 import NotificationBell from "@/components/notifications/NotificationBell";
 import { useUnreadCount } from "@/components/notifications/useUnreadCount";
 
-type IconName = "home" | "book" | "settings" | "people" | "calendar" | "building" | "layers" | "mail" | "classes" | "chart" | "globe";
+type IconName = "home" | "book" | "settings" | "people" | "calendar" | "building" | "layers" | "mail" | "classes" | "chart" | "globe" | "check";
 
 interface NavItem {
   href: string;
@@ -41,6 +41,7 @@ const NAV_BY_ROLE: Record<string, NavItem[]> = {
   ],
   PLATFORM: [
     { href: "/dashboard/platform", label: "Platform", icon: "globe" },
+    { href: "/dashboard/platform/account", label: "Account", icon: "settings" },
   ],
   SUPER_ADMIN: [
     { href: "/dashboard/super-admin", label: "Home", icon: "home" },
@@ -48,6 +49,7 @@ const NAV_BY_ROLE: Record<string, NavItem[]> = {
     { href: "/dashboard/super-admin/institution", label: "Institution", icon: "building" },
     { href: "/dashboard/super-admin/cohorts", label: "Cohorts & Subjects", icon: "layers" },
     { href: "/dashboard/super-admin/courses", label: "Courses", icon: "book" },
+    { href: "/dashboard/super-admin/assignments", label: "Assignments", icon: "check" },
     { href: "/dashboard/super-admin/invites", label: "Invites", icon: "mail" },
     { href: "/dashboard/super-admin/users", label: "Users & Roles", icon: "people" },
     { href: "/dashboard/admin/attendance", label: "Attendance", icon: "calendar" },
@@ -91,6 +93,7 @@ const ICON_PATHS: Record<IconName, React.ReactNode> = {
   mail: <><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3.5 6.5 8.5 6 8.5-6" /></>,
   classes: <><rect x="3" y="4" width="18" height="12" rx="2" /><path d="M8 20h8M12 16v4" /></>,
   chart: <><path d="M3 3v18h18" /><path d="M7 15v2M11 11v6M15 7v10M19 12v5" /></>,
+  check: <><rect x="4" y="3" width="16" height="18" rx="2" /><path d="M9 3.5V5h6V3.5" /><path d="m8.5 13 2.5 2.5 4.5-5" /></>,
   globe: <><circle cx="12" cy="12" r="9" /><path d="M3 12h18" /><path d="M12 3a14 14 0 0 1 0 18a14 14 0 0 1 0-18" /></>,
 };
 

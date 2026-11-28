@@ -545,7 +545,19 @@ export interface ReviewRow {
   attempts: ReviewAttempt[];
 }
 
+// One assignment in the institution-wide review list (SUPER_ADMIN only).
+export interface AssignmentOverviewRow {
+  publicId: string; title: string; status: "DRAFT" | "OPEN" | "PUBLISHED" | "CLOSED";
+  deadline: string; publishAt: string | null;
+  cohortPublicId: string; cohortName: string;
+  subjectPublicId: string; subjectName: string;
+  facilitatorPublicId: string; facilitatorName: string;
+  waiting: number; gradesReleasedAt: string | null;
+}
+
 export const reviewApi = {
+  // Every assignment in the institution with its waiting-for-review count (SUPER_ADMIN).
+  overview: () => request<AssignmentOverviewRow[]>("/api/assignments/review-overview"),
   list: (assignmentPublicId: string) =>
     request<ReviewRow[]>(`/api/assignments/${assignmentPublicId}/submissions`),
   review: (submissionPublicId: string, body: {
